@@ -92,6 +92,12 @@ class RulesPanel(QWidget):
                 brush = QBrush(color)
                 item.setForeground(brush)
 
+            pattern = rule.pattern.strip()
+            if pattern.endswith("/**"):
+                font = item.font()
+                font.setBold(True)
+                item.setFont(font)
+
             self._list.addItem(item)
         self._list.blockSignals(False)
 
@@ -123,8 +129,7 @@ class RulesPanel(QWidget):
         if check_state == Qt.CheckState.PartiallyChecked:
             check_state = Qt.CheckState.Checked
 
-        emit_clear = check_state == Qt.CheckState.Unchecked
-        self._set_all_items(check_state, emit_clear=emit_clear)
+        self._set_all_items(check_state)
 
     def _set_all_items(self, state: Qt.CheckState, *, emit_clear: bool = False) -> None:
         """Apply the same check state to every list item."""
@@ -133,10 +138,7 @@ class RulesPanel(QWidget):
             item = self._list.item(i)
             item.setCheckState(state)
         self._list.blockSignals(False)
-        if emit_clear:
-            self.selectionChanged.emit([])
-        else:
-            self._emit_selection()
+        self._emit_selection()
 
     def _update_select_all_state(self) -> None:
         """Synchronise the tri-state checkbox with individual item states."""

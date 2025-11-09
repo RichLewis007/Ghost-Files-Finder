@@ -34,7 +34,6 @@ class TreeFilterProxyModel(QSortFilterProxyModel):
         super().__init__(parent)
         self._search_regex: QRegularExpression | None = None
         self._rule_filter: set[int] | None = None
-        self._show_none = False
         self.setRecursiveFilteringEnabled(True)
 
     def set_search_regex(self, regex: QRegularExpression | None) -> None:
@@ -45,16 +44,9 @@ class TreeFilterProxyModel(QSortFilterProxyModel):
     def set_rule_filter(self, rule_indices: Sequence[int] | None) -> None:
         """Limit matches to the supplied rule indices."""
         if rule_indices is None:
-            self._show_none = False
             self._rule_filter = None
         else:
-            indices = list(rule_indices)
-            if not indices:
-                self._show_none = True
-                self._rule_filter = set()
-            else:
-                self._show_none = False
-                self._rule_filter = set(indices)
+            self._rule_filter = set(rule_indices)
         self.invalidateFilter()
 
     def filterAcceptsRow(self, source_row: int, source_parent: QModelIndex) -> bool:  # type: ignore[override]
@@ -81,15 +73,13 @@ class TreeFilterProxyModel(QSortFilterProxyModel):
         if not isinstance(node, PathNode):
             return True
 
-        if self._show_none:
-            return False
-
         if self._rule_filter is not None:
-            candidate_rules = set(node.rule_ids)
-            if node.rule_index is not None:
-                candidate_rules.add(node.rule_index)
-            if not candidate_rules.intersection(self._rule_filter):
-                return False
+            if self._rule_filter:
+                candidate_rules = set(node.rule_ids)
+                if node.rule_index is not None:
+                    candidate_rules.add(node.rule_index)
+                if not candidate_rules.intersection(self._rule_filter):
+                    return False
 
         if self._search_regex is None or not self._search_regex.pattern():
             return True

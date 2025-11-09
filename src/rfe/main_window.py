@@ -123,6 +123,7 @@ class MainWindow(QMainWindow):
 
         self.exit_action = QAction("Exit", self)
         self.exit_action.triggered.connect(self._prompt_exit)
+        self.exit_action.setMenuRole(QAction.MenuRole.QuitRole)
 
         file_menu = self.menuBar().addMenu("&File")
         file_menu.addAction(self.select_root_action)
