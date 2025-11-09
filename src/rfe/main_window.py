@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import json
 import logging
+import re
 from collections.abc import Iterable
 from datetime import datetime
 from pathlib import Path
@@ -14,15 +15,16 @@ from PySide6.QtGui import QAction, QCloseEvent
 from PySide6.QtWidgets import (
     QDockWidget,
     QFileDialog,
+    QGroupBox,
     QMainWindow,
     QMessageBox,
-    QSplitter,
     QToolBar,
     QVBoxLayout,
     QWidget,
 )
 
 from .models.fs_model import PathNode
+from .models.rules_model import parse_filter_file
 from .services.config import SettingsStore
 from .views.rules_panel import RulesPanel
 from .views.search_bar import SearchBar
@@ -71,8 +73,6 @@ class MainWindow(QMainWindow):
 
     def _init_ui(self) -> None:
         """Create child widgets and compose the layout."""
-        splitter = QSplitter(Qt.Orientation.Horizontal, self)
-
         self.rules_panel = RulesPanel(self)
         rules_dock = QDockWidget("Rules", self)
         rules_dock.setWidget(self.rules_panel)
@@ -80,15 +80,16 @@ class MainWindow(QMainWindow):
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, rules_dock)
 
         self.tree_panel = TreePanel(self)
-        splitter.addWidget(self.tree_panel)
 
         central = QWidget(self)
-        layout = self._create_central_layout(splitter)
+        layout = self._create_central_layout()
         central.setLayout(layout)
         self.setCentralWidget(central)
 
         self.search_bar = SearchBar(self)
         layout.insertWidget(0, self.search_bar)
+        layout.setStretch(0, 0)
+        layout.setStretch(1, 1)
 
         self.status_bar = AppStatusBar(self)
         self.setStatusBar(self.status_bar)
@@ -102,6 +103,10 @@ class MainWindow(QMainWindow):
         toolbar.setMovable(False)
         self.addToolBar(toolbar)
 
+        self.open_action = QAction("Open…", self)
+        self.open_action.triggered.connect(self._prompt_open_filter_file)
+        toolbar.addAction(self.open_action)
+
         self.delete_action = QAction("Delete…", self)
         self.delete_action.setEnabled(False)
         self.delete_action.triggered.connect(self._prompt_delete_selection)
@@ -112,12 +117,23 @@ class MainWindow(QMainWindow):
         self.export_action.triggered.connect(self._prompt_export)
         toolbar.addAction(self.export_action)
 
-    def _create_central_layout(self, splitter: QSplitter) -> QVBoxLayout:
-        """Return the central layout containing the tree view and search."""
+        file_menu = self.menuBar().addMenu("&File")
+        file_menu.addAction(self.open_action)
+        file_menu.addSeparator()
+        file_menu.addAction(self.export_action)
+
+    def _create_central_layout(self) -> QVBoxLayout:
+        """Return the central layout containing the results tree and search."""
         layout = QVBoxLayout()
         layout.setContentsMargins(8, 8, 8, 8)
         layout.setSpacing(6)
-        layout.addWidget(splitter)
+        self.results_group = QGroupBox("Results", self)
+        results_layout = QVBoxLayout()
+        results_layout.setContentsMargins(0, 0, 0, 0)
+        results_layout.setSpacing(0)
+        results_layout.addWidget(self.tree_panel)
+        self.results_group.setLayout(results_layout)
+        layout.addWidget(self.results_group, 1)
         return layout
 
     def _make_connections(self) -> None:
@@ -246,6 +262,72 @@ class MainWindow(QMainWindow):
         """Clear references once the scan thread exits."""
         self._scan_thread = None
         self._scan_worker = None
+
+    # ------------------------------------------------------------------
+    # Filter file management
+
+    def _prompt_open_filter_file(self) -> None:
+        """Allow the user to choose a new rclone filter file."""
+        start_dir = (
+            str(self._filter_file.parent) if self._filter_file.exists() else str(Path.home())
+        )
+        filename, _ = QFileDialog.getOpenFileName(
+            self,
+            "Open filter file",
+            start_dir,
+            "Filter files (*.txt *.filter *.conf);;All files (*)",
+        )
+        if not filename:
+            return
+
+        path = Path(filename)
+        try:
+            text = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            QMessageBox.warning(
+                self,
+                "Invalid filter file",
+                "The selected file is not valid UTF-8 text.",
+            )
+            return
+        except OSError as exc:
+            QMessageBox.warning(
+                self,
+                "Open failed",
+                f"Unable to read the selected file:\n{exc}",
+            )
+            return
+
+        if "\x00" in text:
+            QMessageBox.warning(
+                self,
+                "Invalid filter file",
+                "The selected file appears to be binary data.",
+            )
+            return
+
+        rule_line_pattern = re.compile(r"^\s*[!+-]\s*\S")
+        if not any(rule_line_pattern.match(line) for line in text.splitlines()):
+            QMessageBox.warning(
+                self,
+                "Invalid filter file",
+                "The selected file does not contain any rclone-style filter rules.",
+            )
+            return
+
+        rules = parse_filter_file(path)
+        if not rules:
+            QMessageBox.warning(
+                self,
+                "Unsupported rules",
+                "No supported exclude rules (- or !) were found in the selected file.",
+            )
+            return
+
+        self._filter_file = path
+        self.rules_panel.load_rules_from_path(path)
+        self.status_bar.set_message(f"Loaded filter rules from {path}")
+        self._start_scan()
 
     # ------------------------------------------------------------------
     # Delete workflow

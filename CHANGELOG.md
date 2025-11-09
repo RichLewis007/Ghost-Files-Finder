@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Delete workflow with confirmation dialog and asynchronous Trash worker.
 - Export dialog supporting lines, CSV, JSON, and JSONL formats for visible or full results.
 - Persistent settings for last-used root/filter paths and default export format.
+- Results pane promoted to a dedicated “Results” panel that fills the window beneath the search bar.
+- File context menu now offers “Open in Finder/File Explorer” with OS-specific handling.
+- “Open…” action validates and loads rclone filter files, replacing rules and triggering a rescan.
 
 ## [0.1.0] - 2025-11-08
 
