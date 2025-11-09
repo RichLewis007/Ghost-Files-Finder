@@ -1,5 +1,4 @@
-"""Tree view displaying filesystem matches."""
-
+# Tree view displaying filesystem matches.
 from __future__ import annotations
 
 import fnmatch
@@ -38,7 +37,7 @@ from rfe.views.search_bar import SearchMode
 
 
 class TreeFilterProxyModel(QSortFilterProxyModel):
-    """Proxy model applying search text and rule filters."""
+    # Proxy model applying search text and rule filters.
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -47,12 +46,12 @@ class TreeFilterProxyModel(QSortFilterProxyModel):
         self.setRecursiveFilteringEnabled(True)
 
     def set_search_regex(self, regex: QRegularExpression | None) -> None:
-        """Update the active search regex and re-filter the view."""
+        # Update the active search regex and re-filter the view.
         self._search_regex = regex
         self.invalidateFilter()
 
     def set_rule_filter(self, rule_indices: Sequence[int] | None) -> None:
-        """Limit matches to the supplied rule indices."""
+        # Limit matches to the supplied rule indices.
         if rule_indices is None:
             self._rule_filter = None
         else:
@@ -60,7 +59,7 @@ class TreeFilterProxyModel(QSortFilterProxyModel):
         self.invalidateFilter()
 
     def filterAcceptsRow(self, source_row: int, source_parent: QModelIndex) -> bool:  # type: ignore[override]
-        """Decide whether a source-model row passes the current filters."""
+        # Decide whether a source-model row passes the current filters.
         source_model = self.sourceModel()
         if source_model is None:
             return False
@@ -78,7 +77,7 @@ class TreeFilterProxyModel(QSortFilterProxyModel):
         return False
 
     def _matches(self, index: QModelIndex) -> bool:
-        """Return True when the node represented by ``index`` matches filters."""
+        # Return True when the node represented by ``index`` matches filters.
         node = index.data(Qt.ItemDataRole.UserRole)
         if not isinstance(node, PathNode):
             return True
@@ -99,7 +98,7 @@ class TreeFilterProxyModel(QSortFilterProxyModel):
 
 
 class TreePanel(QWidget):
-    """Wrapper around QTreeView for displaying root paths."""
+    # Wrapper around QTreeView for displaying root paths.
 
     deleteRequested = Signal()
     selectionChanged = Signal()
@@ -145,7 +144,7 @@ class TreePanel(QWidget):
         self._model.itemChanged.connect(self._on_item_changed)
 
     def load_nodes(self, nodes: Sequence[PathNode], rules: Sequence[Rule]) -> None:
-        """Load a fresh tree of nodes into the view."""
+        # Load a fresh tree of nodes into the view.
         self._model.load_nodes(nodes, rules)
         self._current_nodes = list(nodes)
         self._rules = list(rules)
@@ -161,18 +160,18 @@ class TreePanel(QWidget):
         self._model.highlight_rule(set(), None)
 
     def set_root_path(self, path: Path) -> None:
-        """Record the root path in the widget's accessible metadata."""
+        # Record the root path in the widget's accessible metadata.
         self._root_path = path
         self._tree.setWhatsThis(f"Root path: {path}")
 
     def on_search_requested(self, text: str, mode: SearchMode, case_sensitive: bool) -> None:
-        """Update the filter proxy based on a search request."""
+        # Update the filter proxy based on a search request.
         regex = self._build_regex(text, mode, case_sensitive)
         self._proxy.set_search_regex(regex)
         self._update_summary()
 
     def on_rules_selection_changed(self, rule_indices: list[int] | None) -> None:
-        """React to rule selection changes from the rules panel."""
+        # React to rule selection changes from the rules panel.
         if rule_indices is None:
             self._proxy.set_rule_filter(None)
         elif len(rule_indices) == 0:
@@ -182,7 +181,7 @@ class TreePanel(QWidget):
         self._update_summary()
 
     def on_rule_highlighted(self, payload: object) -> None:
-        """Highlight rows that match the selected rule."""
+        # Highlight rows that match the selected rule.
         if payload is None:
             self._highlight_rule_index = None
             self._highlight_color_hex = None
@@ -199,11 +198,11 @@ class TreePanel(QWidget):
         self._update_summary()
 
     def selected_paths(self) -> list[Path]:
-        """Return absolute paths for the current selection."""
+        # Return absolute paths for the current selection.
         return [node.abs_path for node in self.selected_nodes()]
 
     def selected_nodes(self) -> list[PathNode]:
-        """Return ``PathNode`` objects for the current selection."""
+        # Return ``PathNode`` objects for the current selection.
         nodes: list[PathNode] = []
         for index in self._tree.selectionModel().selectedRows():
             node = index.data(Qt.ItemDataRole.UserRole)
@@ -212,7 +211,7 @@ class TreePanel(QWidget):
         return nodes
 
     def _show_context_menu(self, point: QPoint) -> None:
-        """Display a context menu with destructive actions."""
+        # Display a context menu with destructive actions.
         nodes = self.selected_nodes()
         if not nodes:
             return
@@ -235,13 +234,13 @@ class TreePanel(QWidget):
         selected: QItemSelection,
         deselected: QItemSelection,
     ) -> None:
-        """Forward selection changes to listeners."""
+        # Forward selection changes to listeners.
         _ = selected, deselected
         self.selectionChanged.emit()
         self._update_summary()
 
     def collect_nodes(self, *, visible_only: bool) -> list[PathNode]:
-        """Collect nodes from the model, optionally limited to visible rows."""
+        # Collect nodes from the model, optionally limited to visible rows.
         if visible_only:
             collected: list[PathNode] = []
 
@@ -381,7 +380,7 @@ class TreePanel(QWidget):
         mode: SearchMode,
         case_sensitive: bool,
     ) -> QRegularExpression | None:
-        """Build a regular expression reflecting the search request."""
+        # Build a regular expression reflecting the search request.
         if not text:
             return None
 

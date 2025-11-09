@@ -1,5 +1,4 @@
-"""Sidebar for rule management."""
-
+# Sidebar for rule management.
 from __future__ import annotations
 
 import itertools
@@ -22,7 +21,7 @@ from rfe.models.rules_model import Rule, parse_filter_file
 
 
 class RulesPanel(QWidget):
-    """Widget listing filter rules with checkboxes."""
+    # Widget listing filter rules with checkboxes.
 
     selectionChanged = Signal(object)
     ruleHighlighted = Signal(object)
@@ -63,7 +62,7 @@ class RulesPanel(QWidget):
         self._rule_colors: dict[int, str] = {}
 
     def load_rules_from_path(self, path: Path) -> None:
-        """Populate the panel with rules parsed from ``path``."""
+        # Populate the panel with rules parsed from ``path``.
         try:
             self._rules = parse_filter_file(path)
         except OSError as exc:  # pragma: no cover - UI feedback
@@ -76,7 +75,7 @@ class RulesPanel(QWidget):
         self._populate_list()
 
     def _populate_list(self) -> None:
-        """Refresh the list widget with the current rule set."""
+        # Refresh the list widget with the current rule set.
         self._list.clear()
         color_cycle = itertools.cycle(self._fallback_colors)
 
@@ -113,7 +112,7 @@ class RulesPanel(QWidget):
         self.ruleHighlighted.emit(None)
 
     def _emit_selection(self) -> None:
-        """Emit the currently selected rule indices."""
+        # Emit the currently selected rule indices.
         selected_indices: list[int] = []
         for i in range(self._list.count()):
             item = self._list.item(i)
@@ -125,7 +124,7 @@ class RulesPanel(QWidget):
         self.selectionChanged.emit(selected_indices or None)
 
     def _on_item_selection_changed(self) -> None:
-        """Emit the highlighted rule index and color when rows are selected."""
+        # Emit the highlighted rule index and color when rows are selected.
         selected_items = self._list.selectedItems()
         if not selected_items:
             self.ruleHighlighted.emit(None)
@@ -140,7 +139,7 @@ class RulesPanel(QWidget):
         self.ruleHighlighted.emit((index, color_hex))
 
     def _on_select_all_state_changed(self, state: int) -> None:
-        """Handle changes to the tri-state “select all” checkbox."""
+        # Handle changes to the tri-state “select all” checkbox.
         if self._updating_checkbox_state:
             return
 
@@ -151,7 +150,7 @@ class RulesPanel(QWidget):
         self._set_all_items(check_state)
 
     def _set_all_items(self, state: Qt.CheckState, *, emit_clear: bool = False) -> None:
-        """Apply the same check state to every list item."""
+        # Apply the same check state to every list item.
         self._list.blockSignals(True)
         for i in range(self._list.count()):
             item = self._list.item(i)
@@ -160,7 +159,7 @@ class RulesPanel(QWidget):
         self._emit_selection()
 
     def _update_select_all_state(self) -> None:
-        """Synchronise the tri-state checkbox with individual item states."""
+        # Synchronise the tri-state checkbox with individual item states.
         if not self._rules:
             self._set_select_all_state(Qt.CheckState.Unchecked)
             return
@@ -178,7 +177,7 @@ class RulesPanel(QWidget):
             self._set_select_all_state(Qt.CheckState.PartiallyChecked)
 
     def _set_select_all_state(self, state: Qt.CheckState) -> None:
-        """Update the select-all checkbox without triggering loops."""
+        # Update the select-all checkbox without triggering loops.
         self._updating_checkbox_state = True
         try:
             self._select_all.setCheckState(state)
@@ -187,5 +186,5 @@ class RulesPanel(QWidget):
 
     @property
     def rules(self) -> list[Rule]:
-        """Return the current list of rules."""
+        # Return the current list of rules.
         return self._rules

@@ -1,5 +1,4 @@
-"""Search bar widget."""
-
+# Search bar widget.
 from __future__ import annotations
 
 from typing import Literal
@@ -18,7 +17,7 @@ SearchMode = Literal["text", "glob", "regex"]
 
 
 class SearchBar(QWidget):
-    """Search controls with mode selection."""
+    # Search controls with mode selection.
 
     searchRequested = Signal(str, str, bool)
 
@@ -48,14 +47,20 @@ class SearchBar(QWidget):
 
         self._input.returnPressed.connect(self._emit_search)
         self._submit.clicked.connect(self._emit_search)
+        self._input.textChanged.connect(self._on_text_changed)
 
     def _emit_search(self) -> None:
-        """Emit a search request using the current widget state."""
+        # Emit a search request using the current widget state.
         text = self._input.text()
         mode = self._mode.currentText()
         case_sensitive = self._case_toggle.isChecked()
         self.searchRequested.emit(text, mode, case_sensitive)
 
     def set_search_text(self, value: str) -> None:
-        """Programmatically update the search field text."""
+        # Programmatically update the search field text.
         self._input.setText(value)
+
+    def _on_text_changed(self, value: str) -> None:
+        # Trigger a fresh search when the field is cleared.
+        if value == "":
+            self._emit_search()

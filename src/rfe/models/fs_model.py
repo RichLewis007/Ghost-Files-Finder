@@ -1,5 +1,4 @@
-"""Filesystem tree data structures and Qt model."""
-
+# Filesystem tree data structures and Qt model.
 from __future__ import annotations
 
 from collections.abc import Sequence
@@ -18,7 +17,7 @@ NodeType = Literal["file", "dir"]
 
 @dataclass(slots=True)
 class PathNode:
-    """Representation of a file-system item participating in the tree view."""
+    # Representation of a file-system item participating in the tree view.
 
     abs_path: Path
     rel_path: str
@@ -32,12 +31,12 @@ class PathNode:
 
     @property
     def name(self) -> str:
-        """Return the display name for the node."""
+        # Return the display name for the node.
         return self.abs_path.name or self.rel_path
 
 
 class PathTreeModel(QStandardItemModel):
-    """Qt model representing a tree of `PathNode` objects."""
+    # Qt model representing a tree of `PathNode` objects.
 
     HEADERS: ClassVar[list[str]] = [
         "Name",
@@ -55,7 +54,7 @@ class PathTreeModel(QStandardItemModel):
         self._rules: Sequence[Rule] = []
 
     def load_nodes(self, nodes: Sequence[PathNode], rules: Sequence[Rule]) -> None:
-        """Populate the model with a fresh tree."""
+        # Populate the model with a fresh tree.
         self._rules = rules
         self.clear()
         self.setHorizontalHeaderLabels(self.HEADERS)
@@ -69,7 +68,7 @@ class PathTreeModel(QStandardItemModel):
         node: PathNode,
         prefix: str,
     ) -> None:
-        """Append a node to the model."""
+        # Append a node to the model.
         segment = node.name
         display_name = f"{prefix}/{segment}" if prefix else segment
 
@@ -84,7 +83,7 @@ class PathTreeModel(QStandardItemModel):
             self._append_node(parent_item=name_item, node=child, prefix="")
 
     def _create_row(self, node: PathNode, display_name: str) -> list[QStandardItem]:
-        """Create a standard-item row for ``node``."""
+        # Create a standard-item row for ``node``.
         name_item = QStandardItem(display_name)
         name_item.setData(node, Qt.ItemDataRole.UserRole)
         if node.type == "dir":
@@ -106,7 +105,7 @@ class PathTreeModel(QStandardItemModel):
         return [name_item, type_item, size_item, mtime_item, rule_item, all_rules_item, path_item]
 
     def _rule_label(self, index: int | None) -> str:
-        """Resolve a rule index into a user-facing label."""
+        # Resolve a rule index into a user-facing label.
         if index is None or index < 0 or index >= len(self._rules):
             return ""
         rule = self._rules[index]
@@ -124,7 +123,7 @@ class PathTreeModel(QStandardItemModel):
 
     @staticmethod
     def _format_size(size: int | None) -> str:
-        """Return a human-readable size string."""
+        # Return a human-readable size string.
         if size is None:
             return ""
         if size < 1024:
@@ -137,13 +136,13 @@ class PathTreeModel(QStandardItemModel):
 
     @staticmethod
     def _format_mtime(mtime: float | None) -> str:
-        """Format a modified timestamp for presentation."""
+        # Format a modified timestamp for presentation.
         if mtime is None:
             return ""
         return datetime.fromtimestamp(mtime).strftime("%Y-%m-%d %H:%M")
 
     def highlight_rule(self, rel_paths: set[str], color: QColor | None) -> None:
-        """Apply background highlighting to rows whose relative paths match ``rel_paths``."""
+        # Apply background highlighting to rows whose relative paths match ``rel_paths``.
         brush = QBrush(color) if color is not None else QBrush()
         column_count = len(self.HEADERS)
 

@@ -1,12 +1,11 @@
-"""Status bar widget."""
-
+# Status bar widget.
 from __future__ import annotations
 
 from PySide6.QtWidgets import QLabel, QProgressBar, QStatusBar, QWidget
 
 
 class AppStatusBar(QStatusBar):
-    """Status bar showing scan progress and stats."""
+    # Status bar showing scan progress and stats.
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -20,11 +19,11 @@ class AppStatusBar(QStatusBar):
         self.addPermanentWidget(self._progress, 0)
 
     def set_message(self, message: str) -> None:
-        """Display a textual status update."""
+        # Display a textual status update.
         self._stats.setText(message)
 
     def set_progress(self, fraction: float | None) -> None:
-        """Show progress in the range [0, 1] or hide when ``None``."""
+        # Show progress in the range [0, 1] or hide when ``None``.
         if fraction is None:
             self._progress.setRange(0, 0)
             self._progress.setVisible(False)

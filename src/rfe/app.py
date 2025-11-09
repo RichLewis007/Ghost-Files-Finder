@@ -1,5 +1,3 @@
-"""Application entry point for Show Excluded and Ignored."""
-
 from __future__ import annotations
 
 import argparse
@@ -10,6 +8,7 @@ from pathlib import Path
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
 
+# Application entry point for Show Excluded and Ignored.
 from .main_window import MainWindow
 from .services import config as config_service
 from .services import logger as logger_service
@@ -20,7 +19,7 @@ DEFAULT_ROOT_PATH = Path("/Users/rich/Downloads")
 
 
 def _build_arg_parser() -> argparse.ArgumentParser:
-    """Construct and return the CLI argument parser."""
+    # Construct and return the CLI argument parser.
     parser = argparse.ArgumentParser(
         prog="show-excluded-and-ignored",
         description="Visualize files and folders matched by rclone-style filter rules.",
@@ -47,7 +46,7 @@ def _build_arg_parser() -> argparse.ArgumentParser:
 
 
 def _ensure_qapp() -> QApplication:
-    """Return the active QApplication, creating one if needed."""
+    # Return the active QApplication, creating one if needed.
     existing = QApplication.instance()
     if existing is not None:
         return existing
@@ -62,7 +61,7 @@ def _ensure_qapp() -> QApplication:
 
 
 def _resolve_defaults(root: Path, filter_file: Path) -> tuple[Path, Path]:
-    """Expand user paths and emit warnings for missing paths."""
+    # Expand user paths and emit warnings for missing paths.
     root = root.expanduser()
     filter_file = filter_file.expanduser()
 
@@ -76,7 +75,7 @@ def _resolve_defaults(root: Path, filter_file: Path) -> tuple[Path, Path]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Entry point for console scripts."""
+    # Entry point for console scripts.
     if argv is None:
         argv = sys.argv[1:]
 

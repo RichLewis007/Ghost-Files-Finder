@@ -1,5 +1,4 @@
-"""Background worker for deleting paths via system trash."""
-
+# Background worker for deleting paths via system trash.
 from __future__ import annotations
 
 from collections.abc import Iterable
@@ -13,14 +12,14 @@ from rfe.services.trash import send_path_to_trash
 
 @dataclass(slots=True)
 class DeleteResult:
-    """Summary of a delete request, split into successes and failures."""
+    # Summary of a delete request, split into successes and failures.
 
     removed: list[Path]
     failed: list[Path]
 
 
 class DeleteWorker(QObject):
-    """Moves files and folders to the Trash in a worker thread."""
+    # Moves files and folders to the Trash in a worker thread.
 
     progress = Signal(int, int, str)
     finished = Signal(object)  # DeleteResult
@@ -31,7 +30,7 @@ class DeleteWorker(QObject):
         self._paths = [path for path in paths if path.is_file()]
 
     def start(self) -> None:
-        """Delete each requested path, emitting progress and errors."""
+        # Delete each requested path, emitting progress and errors.
         removed: list[Path] = []
         failed: list[Path] = []
         total = len(self._paths)

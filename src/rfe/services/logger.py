@@ -1,5 +1,4 @@
-"""Logging configuration utilities."""
-
+# Logging configuration utilities.
 from __future__ import annotations
 
 import logging
@@ -12,7 +11,7 @@ from .config import APP_NAME, ORG_NAME
 
 
 def _get_log_path() -> Path:
-    """Return the path to the rotating log file, creating folders as needed."""
+    # Return the path to the rotating log file, creating folders as needed.
     dirs = PlatformDirs(appname=APP_NAME, appauthor=ORG_NAME)
     path = Path(dirs.user_log_dir)
     path.mkdir(parents=True, exist_ok=True)
@@ -20,7 +19,7 @@ def _get_log_path() -> Path:
 
 
 def configure(*, log_level: str = "INFO") -> None:
-    """Configure root logger with rotating file and console handlers."""
+    # Configure root logger with rotating file and console handlers.
     root = logging.getLogger()
     root.setLevel(logging.DEBUG)
 

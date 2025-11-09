@@ -1,5 +1,4 @@
-"""Background filesystem scanning worker."""
-
+# Background filesystem scanning worker.
 from __future__ import annotations
 
 import os
@@ -17,7 +16,7 @@ from rfe.models.rules_model import Rule
 
 @dataclass(slots=True)
 class ScanStats:
-    """Aggregate statistics for a scan run."""
+    # Aggregate statistics for a scan run.
 
     scanned: int = 0
     matched: int = 0
@@ -26,7 +25,7 @@ class ScanStats:
 
     @property
     def duration(self) -> float | None:
-        """Return the scan duration in seconds, if the scan has finished."""
+        # Return the scan duration in seconds, if the scan has finished.
         if self.end_time is None:
             return None
         return self.end_time - self.start_time
@@ -34,14 +33,14 @@ class ScanStats:
 
 @dataclass(slots=True)
 class ScanPayload:
-    """Result payload emitted on scan completion."""
+    # Result payload emitted on scan completion.
 
     nodes: list[PathNode]
     stats: ScanStats
 
 
 class ScanWorker(QObject):
-    """Worker object that scans a filesystem subtree for rule matches."""
+    # Worker object that scans a filesystem subtree for rule matches.
 
     progress = Signal(int, int, str)
     finished = Signal(object)  # ScanPayload
@@ -62,11 +61,11 @@ class ScanWorker(QObject):
         self._cancel_requested = False
 
     def request_cancel(self) -> None:
-        """Signal the worker to stop at the next opportunity."""
+        # Signal the worker to stop at the next opportunity.
         self._cancel_requested = True
 
     def start(self) -> None:
-        """Entry point executed inside the worker thread."""
+        # Entry point executed inside the worker thread.
         payload = self._run_scan()
 
         if payload is None:
@@ -77,7 +76,7 @@ class ScanWorker(QObject):
     # Internal helpers -------------------------------------------------
 
     def _run_scan(self) -> ScanPayload | None:
-        """Perform the filesystem traversal, respecting cancellation signals."""
+        # Perform the filesystem traversal, respecting cancellation signals.
         root = self._root_path
         if not root.exists():
             raise FileNotFoundError(f"Root path does not exist: {root}")
@@ -129,7 +128,7 @@ class ScanWorker(QObject):
         return ScanPayload(nodes=tree_nodes, stats=stats)
 
     def _build_node(self, match: MatchResult) -> PathNode:
-        """Create a ``PathNode`` representation for a filesystem entry."""
+        # Create a PathNode representation for a filesystem entry.
         abs_path = match.abs_path
         try:
             stat = abs_path.stat()
@@ -158,7 +157,7 @@ class ScanWorker(QObject):
         nodes: dict[str, PathNode],
         root_key: str,
     ) -> list[PathNode]:
-        """Attach child nodes to their parents and return root-level nodes."""
+        # Attach child nodes to their parents and return root-level nodes.
         ordered_keys = sorted(
             (key for key in nodes.keys() if key != root_key),
             key=lambda key: (PurePosixPath(key).parts, key),
@@ -181,7 +180,7 @@ class ScanWorker(QObject):
         return list(nodes[root_key].children)
 
     def _create_virtual_parent(self, rel_path: str, nodes: dict[str, PathNode]) -> PathNode:
-        """Create any missing ancestor nodes so children can attach correctly."""
+        # Create any missing ancestor nodes so children can attach correctly.
         current = rel_path
         # Build any missing ancestors up to the root.
         missing_paths = []
@@ -202,7 +201,7 @@ class ScanWorker(QObject):
 
     @staticmethod
     def _parent_key(rel_path: str) -> str:
-        """Return the parent key for a given relative path."""
+        # Return the parent key for a given relative path.
         path = PurePosixPath(rel_path)
         parent = path.parent
         if parent == PurePosixPath("."):
@@ -210,7 +209,7 @@ class ScanWorker(QObject):
         return parent.as_posix()
 
     def _sort_children(self, node: PathNode) -> None:
-        """Recursively sort children so directories appear before files."""
+        # Recursively sort children so directories appear before files.
         node.children.sort(key=lambda item: (item.type != "dir", item.name.lower()))
         for child in node.children:
             self._sort_children(child)

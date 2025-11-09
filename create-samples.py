@@ -1,13 +1,12 @@
-"""Create a sample tree covering every rule in the bundled filter file.
-
-This utility mirrors the integration-test fixture and is helpful for manual QA
-or demonstrations. Usage examples:
-
-    uv run --extra dev python create-samples.py
-    uv run --extra dev python create-samples.py --output ./temp/samples --force
-
-The ``--extra dev`` flag ensures optional development dependencies are available.
-"""
+# Create a sample tree covering every rule in the bundled filter file.
+#
+# This utility mirrors the integration-test fixture and is helpful for manual QA
+# or demonstrations. Usage examples:
+#
+#     uv run --extra dev python create-samples.py
+#     uv run --extra dev python create-samples.py --output ./temp/samples --force
+#
+# The ``--extra dev`` flag ensures optional development dependencies are available.
 
 from __future__ import annotations
 
@@ -20,15 +19,7 @@ from tests.integration.test_scanner_finds_excluded_patterns import fixture_patte
 
 
 def create_samples(destination: Path, *, force: bool) -> Path:
-    """Create the sample tree at ``destination``.
-
-    Args:
-        destination: Directory where the structure should be created.
-        force: If True, overwrite the destination when it already exists.
-
-    Returns:
-        The destination path.
-    """
+    # Create the sample tree at destination.
     if destination.exists():
         if not force:
             raise FileExistsError(
@@ -67,7 +58,7 @@ def create_samples(destination: Path, *, force: bool) -> Path:
 
 
 def _ensure_additional_examples(destination: Path) -> None:
-    """Create sample entries not covered by the fixture helper."""
+    # Create sample entries not covered by the fixture helper.
     extras = {
         ".VolumeIcon.icns": "file",
         ".com.apple.timemachine.donotpresent": "file",
@@ -93,7 +84,7 @@ def _ensure_additional_examples(destination: Path) -> None:
 
 
 def main() -> int:
-    """CLI entry point."""
+    # CLI entry point.
     parser = argparse.ArgumentParser(
         description="Create a sample directory tree containing every pattern from a given rclone filter list file.",
     )

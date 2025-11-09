@@ -1,5 +1,4 @@
-"""Main window implementation."""
-
+# Main window implementation.
 from __future__ import annotations
 
 import csv
@@ -37,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 
 class MainWindow(QMainWindow):
-    """Primary UI window."""
+    # Primary UI window.
 
     def __init__(
         self,
@@ -47,7 +46,7 @@ class MainWindow(QMainWindow):
         settings_store: SettingsStore,
         parent: QWidget | None = None,
     ) -> None:
-        """Initialise the main window and restore user preferences."""
+        # Initialise the main window and restore user preferences.
         super().__init__(parent)
         last_root, last_filter = settings_store.load_last_paths()
         self._root_path = last_root if last_root and last_root.exists() else root_path
@@ -72,7 +71,7 @@ class MainWindow(QMainWindow):
         self._load_initial_data()
 
     def _init_ui(self) -> None:
-        """Create child widgets and compose the layout."""
+        # Create child widgets and compose the layout.
         self.rules_panel = RulesPanel(self)
         rules_dock = QDockWidget("Rules", self)
         rules_dock.setWidget(self.rules_panel)
@@ -98,7 +97,7 @@ class MainWindow(QMainWindow):
         self._make_connections()
 
     def _create_actions(self) -> None:
-        """Build the window toolbar and key QAction objects."""
+        # Build the window toolbar and key QAction objects.
         toolbar = QToolBar("Main actions", self)
         toolbar.setMovable(False)
         self.addToolBar(toolbar)
@@ -134,7 +133,7 @@ class MainWindow(QMainWindow):
         file_menu.addAction(self.quit_action)
 
     def _create_central_layout(self) -> QVBoxLayout:
-        """Return the central layout containing the results tree and search."""
+        # Return the central layout containing the results tree and search.
         layout = QVBoxLayout()
         layout.setContentsMargins(8, 8, 8, 8)
         layout.setSpacing(6)
@@ -148,7 +147,7 @@ class MainWindow(QMainWindow):
         return layout
 
     def _make_connections(self) -> None:
-        """Connect cross-widget signals and slots."""
+        # Connect cross-widget signals and slots.
         self.search_bar.searchRequested.connect(self.tree_panel.on_search_requested)
         self.rules_panel.selectionChanged.connect(self.tree_panel.on_rules_selection_changed)
         self.rules_panel.ruleHighlighted.connect(self.tree_panel.on_rule_highlighted)
@@ -156,7 +155,7 @@ class MainWindow(QMainWindow):
         self.tree_panel.deleteRequested.connect(self._prompt_delete_selection)
 
     def _restore_state(self) -> None:
-        """Restore geometry and other persisted UI state."""
+        # Restore geometry and other persisted UI state.
         geometry = self._settings_store.load_window_geometry()
         if geometry is not None:
             self.restoreGeometry(geometry)
@@ -164,14 +163,14 @@ class MainWindow(QMainWindow):
             logger.debug("No previous window geometry stored.")
 
     def closeEvent(self, event: QCloseEvent) -> None:
-        """Persist state and ensure background work stops before closing."""
+        # Persist state and ensure background work stops before closing.
         self._cancel_active_scan(wait=True)
         self._cancel_active_delete(wait=True)
         self._settings_store.save_window_geometry(self.saveGeometry())
         super().closeEvent(event)
 
     def _load_initial_data(self) -> None:
-        """Kick off the initial rule load and directory scan."""
+        # Kick off the initial rule load and directory scan.
         if not self._filter_file.exists():
             QMessageBox.warning(
                 self,
@@ -188,7 +187,7 @@ class MainWindow(QMainWindow):
     # Scanning lifecycle
 
     def _start_scan(self) -> None:
-        """Begin a background scan using the current rules and root path."""
+        # Begin a background scan using the current rules and root path.
         self._cancel_active_scan(wait=True)
         self._last_scan_nodes = []
 
@@ -226,7 +225,7 @@ class MainWindow(QMainWindow):
         thread.start()
 
     def _cancel_active_scan(self, *, wait: bool) -> None:
-        """Request cancellation of the running scan thread."""
+        # Request cancellation of the running scan thread.
         if self._scan_worker is not None:
             self._scan_worker.request_cancel()
         if self._scan_thread is not None:
@@ -237,14 +236,14 @@ class MainWindow(QMainWindow):
             self._scan_worker = None
 
     def _on_scan_progress(self, scanned: int, matched: int, current_path: str) -> None:
-        """Update progress feedback while scanning."""
+        # Update progress feedback while scanning.
         parts = [f"Scanning… {matched} matches / {scanned} items"]
         if current_path and current_path not in {"", "done"}:
             parts.append(current_path)
         self.status_bar.set_message(" — ".join(parts))
 
     def _on_scan_finished(self, payload: ScanPayload) -> None:
-        """Handle completion of a scan by updating the tree and status."""
+        # Handle completion of a scan by updating the tree and status.
         self.tree_panel.load_nodes(payload.nodes, self.rules_panel.rules)
         duration = payload.stats.duration
         duration_text = f"{duration:.2f}s" if duration is not None else "n/a"
@@ -259,19 +258,19 @@ class MainWindow(QMainWindow):
         self._update_action_states()
 
     def _on_scan_error(self, message: str) -> None:
-        """Surface scan failures to the user."""
+        # Surface scan failures to the user.
         self.status_bar.set_message("Scan failed.")
         self._set_controls_enabled(True)
         QMessageBox.critical(self, "Scan failed", message)
 
     def _on_scan_cancelled(self) -> None:
-        """Reset UI after a cancelled scan."""
+        # Reset UI after a cancelled scan.
         self.status_bar.set_message("Scan cancelled.")
         self.status_bar.set_progress(None)
         self._set_controls_enabled(True)
 
     def _on_scan_thread_finished(self) -> None:
-        """Clear references once the scan thread exits."""
+        # Clear references once the scan thread exits.
         self._scan_thread = None
         self._scan_worker = None
 
@@ -279,7 +278,7 @@ class MainWindow(QMainWindow):
     # Filter file management
 
     def _prompt_open_filter_file(self) -> None:
-        """Allow the user to choose a new rclone filter file."""
+        # Allow the user to choose a new rclone filter file.
         start_dir = (
             str(self._filter_file.parent) if self._filter_file.exists() else str(Path.home())
         )
@@ -342,7 +341,7 @@ class MainWindow(QMainWindow):
         self._start_scan()
 
     def _prompt_select_root(self) -> None:
-        """Allow the user to choose a new root directory to scan."""
+        # Allow the user to choose a new root directory to scan.
         start_dir = str(self._root_path) if self._root_path.exists() else str(Path.home())
         directory = QFileDialog.getExistingDirectory(
             self,
@@ -367,7 +366,7 @@ class MainWindow(QMainWindow):
         self._start_scan()
 
     def _prompt_exit(self) -> None:
-        """Confirm with the user before quitting the application."""
+        # Confirm with the user before quitting the application.
         response = QMessageBox.question(
             self,
             "Quit Show Excluded and Ignored",
@@ -382,7 +381,7 @@ class MainWindow(QMainWindow):
     # Delete workflow
 
     def _prompt_delete_selection(self) -> None:
-        """Ask the user to confirm deleting the current selection."""
+        # Ask the user to confirm deleting the current selection.
         if not self._controls_enabled:
             return
 
@@ -430,7 +429,7 @@ class MainWindow(QMainWindow):
         self._start_delete(file_nodes)
 
     def _start_delete(self, nodes: list[PathNode]) -> None:
-        """Start the background delete worker for the given nodes."""
+        # Start the background delete worker for the given nodes.
         self._cancel_active_delete(wait=True)
         paths = [node.abs_path for node in nodes if node.type == "file"]
         if not paths:
@@ -461,7 +460,7 @@ class MainWindow(QMainWindow):
         thread.start()
 
     def _cancel_active_delete(self, *, wait: bool) -> None:
-        """Stop the delete worker if it is running."""
+        # Stop the delete worker if it is running.
         if self._delete_thread is not None:
             self._delete_thread.quit()
             if wait:
@@ -470,15 +469,15 @@ class MainWindow(QMainWindow):
             self._delete_worker = None
 
     def _on_delete_progress(self, current: int, total: int, path: str) -> None:
-        """Update the status bar as items are deleted."""
+        # Update the status bar as items are deleted.
         self.status_bar.set_message(f"Deleting {current}/{total}: {path}")
 
     def _on_delete_error(self, message: str) -> None:
-        """Collect delete errors for later display."""
+        # Collect delete errors for later display.
         self._delete_errors.append(message)
 
     def _on_delete_finished(self, result: DeleteResult) -> None:
-        """Handle completion of the delete worker."""
+        # Handle completion of the delete worker.
         if self._delete_errors:
             QMessageBox.warning(self, "Delete issues", "\n".join(self._delete_errors))
 
@@ -488,7 +487,7 @@ class MainWindow(QMainWindow):
         self._start_scan()
 
     def _on_delete_thread_finished(self) -> None:
-        """Clean up delete worker state once the thread exits."""
+        # Clean up delete worker state once the thread exits.
         self._delete_thread = None
         self._delete_worker = None
         self._delete_errors = []
@@ -497,7 +496,7 @@ class MainWindow(QMainWindow):
     # Export workflow
 
     def _prompt_export(self) -> None:
-        """Display the export dialog and write out the selected format."""
+        # Display the export dialog and write out the selected format.
         if not self._last_scan_nodes:
             QMessageBox.information(self, "Export", "Nothing to export yet.")
             return
@@ -555,7 +554,7 @@ class MainWindow(QMainWindow):
         self.status_bar.set_message(f"Exported {len(nodes)} item(s) ({scope_text}).")
 
     def _determine_export_format(self, filename: str, selected_filter: str) -> str | None:
-        """Infer an export format from the filename and dialog selection."""
+        # Infer an export format from the filename and dialog selection.
         ext = Path(filename).suffix.lower()
         mapping = {
             ".txt": "lines",
@@ -578,7 +577,7 @@ class MainWindow(QMainWindow):
         return None
 
     def _write_export_file(self, filepath: Path, fmt: str, nodes: Iterable[PathNode]) -> None:
-        """Write the export file in the requested format."""
+        # Write the export file in the requested format.
         if fmt == "lines":
             text = "\n".join(str(node.abs_path) for node in nodes) + "\n"
             filepath.write_text(text, encoding="utf-8")
@@ -616,7 +615,7 @@ class MainWindow(QMainWindow):
         raise ValueError(f"Unsupported export format: {fmt}")
 
     def _node_payload(self, node: PathNode) -> dict[str, object]:
-        """Return a JSON-serialisable representation of a node."""
+        # Return a JSON-serialisable representation of a node.
         first_rule, all_rules = self._rule_labels(node)
         return {
             "abs_path": str(node.abs_path),
@@ -630,7 +629,7 @@ class MainWindow(QMainWindow):
         }
 
     def _rule_labels(self, node: PathNode) -> tuple[str | None, list[str]]:
-        """Return the primary and secondary rule labels for ``node``."""
+        # Return the primary and secondary rule labels for ``node``.
         first: str | None = None
         labels: list[str] = []
         rules = self.rules_panel.rules
@@ -655,7 +654,7 @@ class MainWindow(QMainWindow):
     # Shared helpers
 
     def _set_controls_enabled(self, enabled: bool) -> None:
-        """Enable or disable interactive controls and refresh state."""
+        # Enable or disable interactive controls and refresh state.
         self._controls_enabled = enabled
         self.rules_panel.setEnabled(enabled)
         self.search_bar.setEnabled(enabled)
@@ -663,7 +662,7 @@ class MainWindow(QMainWindow):
         self._update_action_states()
 
     def _update_action_states(self) -> None:
-        """Ensure toolbar actions reflect current selection and data."""
+        # Ensure toolbar actions reflect current selection and data.
         has_selection = bool(self.tree_panel.selected_nodes())
         self.delete_action.setEnabled(self._controls_enabled and has_selection)
         has_data = bool(self._last_scan_nodes)
@@ -671,7 +670,7 @@ class MainWindow(QMainWindow):
 
     @staticmethod
     def _format_size(num_bytes: int) -> str:
-        """Return a human-readable string for ``num_bytes``."""
+        # Return a human-readable string for ``num_bytes``.
         value = float(num_bytes)
         for unit in ["B", "KB", "MB", "GB", "TB"]:
             if value < 1024:
@@ -681,7 +680,7 @@ class MainWindow(QMainWindow):
 
     @staticmethod
     def _format_mtime(timestamp: float | None) -> str | None:
-        """Format a timestamp for presentation or return ``None``."""
+        # Format a timestamp for presentation or return ``None``.
         if timestamp is None:
             return None
         return datetime.fromtimestamp(timestamp).isoformat(timespec="seconds")

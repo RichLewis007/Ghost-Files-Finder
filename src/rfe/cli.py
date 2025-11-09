@@ -1,5 +1,3 @@
-"""Simple CLI utilities for Show Excluded and Ignored."""
-
 from __future__ import annotations
 
 import argparse
@@ -8,9 +6,11 @@ from pathlib import Path
 from .models.match_engine import MatchEngine
 from .models.rules_model import parse_filter_file
 
+# Simple CLI utilities for Show Excluded and Ignored.
+
 
 def build_parser() -> argparse.ArgumentParser:
-    """Create and configure the command-line argument parser."""
+    # Create and configure the command-line argument parser.
     parser = argparse.ArgumentParser(
         prog="sei-cli",
         description="Inspect rclone-style filter matches from the command line.",
@@ -36,7 +36,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Entry point for the CLI utility."""
+    # Entry point for the CLI utility.
     parser = build_parser()
     args = parser.parse_args(argv)
 
