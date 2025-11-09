@@ -20,7 +20,7 @@ from PySide6.QtCore import (
     Qt,
     Signal,
 )
-from PySide6.QtGui import QColor
+from PySide6.QtGui import QColor, QStandardItem
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QLabel,
@@ -116,6 +116,9 @@ class TreePanel(QWidget):
         self._highlight_rule_index: int | None = None
         self._highlight_paths: set[str] = set()
         self._rules: list[Rule] = []
+        self._root_path: Path | None = None
+        self._guard_item_change = False
+        self._highlight_color_hex: str | None = None
 
         self._tree = QTreeView(self)
         self._tree.setModel(self._proxy)
@@ -139,6 +142,8 @@ class TreePanel(QWidget):
         layout.addWidget(self._summary_label)
         self.setLayout(layout)
 
+        self._model.itemChanged.connect(self._on_item_changed)
+
     def load_nodes(self, nodes: Sequence[PathNode], rules: Sequence[Rule]) -> None:
         """Load a fresh tree of nodes into the view."""
         self._model.load_nodes(nodes, rules)
@@ -157,6 +162,7 @@ class TreePanel(QWidget):
 
     def set_root_path(self, path: Path) -> None:
         """Record the root path in the widget's accessible metadata."""
+        self._root_path = path
         self._tree.setWhatsThis(f"Root path: {path}")
 
     def on_search_requested(self, text: str, mode: SearchMode, case_sensitive: bool) -> None:
@@ -179,32 +185,17 @@ class TreePanel(QWidget):
         """Highlight rows that match the selected rule."""
         if payload is None:
             self._highlight_rule_index = None
-            self._highlight_paths = set()
-            self._model.highlight_rule(set(), None)
-            self._update_summary()
-            return
+            self._highlight_color_hex = None
+        else:
+            index, color_hex = payload if isinstance(payload, tuple) else (None, None)
+            if isinstance(index, int) and 0 <= index < len(self._rules):
+                self._highlight_rule_index = index
+                self._highlight_color_hex = color_hex if isinstance(color_hex, str) else None
+            else:
+                self._highlight_rule_index = None
+                self._highlight_color_hex = None
 
-        index, color_hex = payload if isinstance(payload, tuple) else (None, None)
-        if not isinstance(index, int) or index < 0 or index >= len(self._rules):
-            self._highlight_rule_index = None
-            self._highlight_paths = set()
-            self._model.highlight_rule(set(), None)
-            self._update_summary()
-            return
-
-        color = QColor(color_hex) if isinstance(color_hex, str) else QColor()
-        if not color.isValid():
-            color = QColor("#FFF59D")  # soft highlight fallback
-        self._highlight_rule_index = index
-        rule = self._rules[index]
-        engine = MatchEngine([rule], case_sensitive=True)
-        paths = {
-            node.rel_path
-            for node in self.collect_nodes(visible_only=False)
-            if engine.matching_rule_indexes(node.rel_path)
-        }
-        self._highlight_paths = paths
-        self._model.highlight_rule(paths, color)
+        self._apply_highlight()
         self._update_summary()
 
     def selected_paths(self) -> list[Path]:
@@ -300,6 +291,89 @@ class TreePanel(QWidget):
             )
 
         self._summary_label.setText("   ".join(parts))
+
+    def _on_item_changed(self, item: QStandardItem) -> None:
+        if self._guard_item_change:
+            return
+        if item.column() != 0:
+            return
+
+        node = item.data(Qt.ItemDataRole.UserRole)
+        if not isinstance(node, PathNode) or node.type != "file":
+            return
+
+        new_name = item.text().strip()
+        old_path = node.abs_path
+        if not new_name or new_name == old_path.name:
+            item.setText(old_path.name)
+            return
+        if "/" in new_name:
+            QMessageBox.warning(self, "Rename failed", "File names cannot contain '/'.")
+            self._reset_item_text(item, old_path.name)
+            return
+
+        parent_dir = old_path.parent
+        new_path = parent_dir / new_name
+        if new_path.exists():
+            QMessageBox.warning(
+                self,
+                "Rename failed",
+                f"A file named '{new_name}' already exists in {parent_dir}.",
+            )
+            self._reset_item_text(item, old_path.name)
+            return
+
+        try:
+            old_path.rename(new_path)
+        except OSError as exc:
+            QMessageBox.warning(self, "Rename failed", f"Could not rename file:\n{exc}")
+            self._reset_item_text(item, old_path.name)
+            return
+
+        node.abs_path = new_path
+        if self._root_path and new_path.is_relative_to(self._root_path):
+            node.rel_path = new_path.relative_to(self._root_path).as_posix()
+        else:
+            node.rel_path = new_path.name
+
+        parent_item = item.parent() or self._model.invisibleRootItem()
+        row = item.row()
+        path_column = self._model.HEADERS.index("Full Path")
+        path_item = parent_item.child(row, path_column)
+        if path_item is not None:
+            path_item.setText(str(new_path))
+
+        if self._highlight_rule_index is not None:
+            self._apply_highlight()
+        self._update_summary()
+
+    def _reset_item_text(self, item: QStandardItem, text: str) -> None:
+        self._guard_item_change = True
+        item.setText(text)
+        self._guard_item_change = False
+
+    def _apply_highlight(self) -> None:
+        if self._highlight_rule_index is None or not (
+            0 <= self._highlight_rule_index < len(self._rules)
+        ):
+            self._highlight_paths = set()
+            self._model.highlight_rule(set(), None)
+            return
+
+        rule = self._rules[self._highlight_rule_index]
+        engine = MatchEngine([rule], case_sensitive=True)
+        paths = {
+            node.rel_path
+            for node in self.collect_nodes(visible_only=False)
+            if engine.matching_rule_indexes(node.rel_path)
+        }
+        self._highlight_paths = paths
+
+        color_hex = self._highlight_color_hex or rule.color or "#FFF59D"
+        color = QColor(color_hex)
+        if not color.isValid():
+            color = QColor("#FFF59D")
+        self._model.highlight_rule(paths, color)
 
     def _build_regex(
         self,

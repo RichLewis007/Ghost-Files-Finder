@@ -83,6 +83,7 @@ class PathTreeModel(QStandardItemModel):
             font = name_item.font()
             font.setBold(True)
             name_item.setFont(font)
+            name_item.setEditable(False)
 
         type_item = QStandardItem(node.type)
         size_item = QStandardItem(self._format_size(node.size))
