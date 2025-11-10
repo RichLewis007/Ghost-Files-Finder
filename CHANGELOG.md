@@ -25,6 +25,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - When no rule checkboxes are active the full source tree is shown; unchecking “Select all” clears the result list.
 - Added File ▸ Quit command (also on the toolbar) with confirmation dialog before closing the app.
 - Clicking a rule highlights its row and colors matching results in the tree with the rule’s tint.
+- Double-click rename updates files on disk while keeping highlights and summary counts in sync.
+- Results footer now shows live file/folder totals plus highlighted counts, and the tree exposes “Expand all” / “Collapse all” controls.
+- Clearing the search field immediately re-runs the filter so visible results reset without extra clicks.
+- Modal scanning dialog mirrors footer progress (long-path friendly) and hosts Scan / Pause / Cancel buttons.
+- macOS builds now show “Show Excluded” as the app name and use a bundled window icon.
+
+### Changed
+
+- Removed the `**/Icon?` filter rule and its Icon sample data from fixtures and tests.
+- `create-samples.py` now relies solely on the shared fixture helper; manual extras were removed to avoid divergence.
+- Replaced module/class/function docstrings with block comments to standardise documentation style project-wide.
 
 ## [0.1.0] - 2025-11-08
 

@@ -22,9 +22,11 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QColor, QStandardItem
 from PySide6.QtWidgets import (
     QAbstractItemView,
+    QHBoxLayout,
     QLabel,
     QMenu,
     QMessageBox,
+    QPushButton,
     QTreeView,
     QVBoxLayout,
     QWidget,
@@ -134,6 +136,17 @@ class TreePanel(QWidget):
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
+        controls = QHBoxLayout()
+        controls.setContentsMargins(0, 0, 0, 0)
+        controls.setSpacing(6)
+        self._expand_all_button = QPushButton("Expand all", self)
+        self._expand_all_button.clicked.connect(self.expand_all)
+        self._collapse_all_button = QPushButton("Collapse all", self)
+        self._collapse_all_button.clicked.connect(self.collapse_all)
+        controls.addWidget(self._expand_all_button)
+        controls.addWidget(self._collapse_all_button)
+        controls.addStretch(1)
+        layout.addLayout(controls)
         layout.addWidget(self._tree)
         self._summary_label = QLabel(self)
         self._summary_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
@@ -209,6 +222,12 @@ class TreePanel(QWidget):
             if isinstance(node, PathNode):
                 nodes.append(node)
         return nodes
+
+    def expand_all(self) -> None:
+        self._tree.expandAll()
+
+    def collapse_all(self) -> None:
+        self._tree.collapseAll()
 
     def _show_context_menu(self, point: QPoint) -> None:
         # Display a context menu with destructive actions.

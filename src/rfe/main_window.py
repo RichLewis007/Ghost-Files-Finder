@@ -142,9 +142,6 @@ class MainWindow(QMainWindow):
 
         file_menu = self.menuBar().addMenu("&File")
         file_menu.addAction(self.scan_action)
-        file_menu.addAction(self.pause_action)
-        file_menu.addAction(self.cancel_action)
-        file_menu.addSeparator()
         file_menu.addAction(self.select_root_action)
         file_menu.addAction(self.open_action)
         file_menu.addSeparator()

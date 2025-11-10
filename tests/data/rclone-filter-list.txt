@@ -28,7 +28,6 @@
 - **/.Trashes/**            # dir
 - **/Backups.backupdb/**    # dir (Time Machine)
 - **/.DocumentRevisions-V100/**  # dir
-- **/Icon?                  # Custom folder icon metadata (e.g., "Icon^M")
 
 ###############################################################################
 # Windows System Files

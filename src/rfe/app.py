@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
 
 # Application entry point for Show Excluded and Ignored.
@@ -16,6 +17,7 @@ from .services import logger as logger_service
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_FILTER_FILE = REPO_ROOT / "tests" / "data" / "rclone-filter-list.txt"
 DEFAULT_ROOT_PATH = Path("/Users/rich/Downloads")
+APP_ICON_PATH = REPO_ROOT / "src" / "rfe" / "resources" / "icons" / "app.png"
 
 
 def _build_arg_parser() -> argparse.ArgumentParser:
@@ -54,9 +56,13 @@ def _ensure_qapp() -> QApplication:
     QApplication.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling, True)
     QApplication.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps, True)
     app = QApplication(sys.argv)
-    app.setApplicationName("Show Excluded and Ignored")
+    app_name = "Show Excluded"
+    app.setApplicationName(app_name)
+    app.setApplicationDisplayName(app_name)
     app.setOrganizationName("RichLewis")
     app.setOrganizationDomain("show-excluded-and-ignored.local")
+    if APP_ICON_PATH.exists():
+        app.setWindowIcon(QIcon(str(APP_ICON_PATH)))
     return app
 
 

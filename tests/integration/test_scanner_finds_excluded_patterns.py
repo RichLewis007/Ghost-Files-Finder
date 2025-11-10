@@ -32,8 +32,7 @@ def fixture_patterns_dir(tmp_path: Path) -> Path:
     (root / ".DocumentRevisions-V100").mkdir()
     (root / ".VolumeIcon.icns").touch()
     (root / ".com.apple.timemachine.donotpresent").touch()
-    (root / "Icon1").touch()
-    (root / "._Icon1").touch()
+    (root / "._DotUnderscoreFile.txt").touch()
 
     # Windows system files
     (root / "Desktop.ini").touch()
@@ -95,8 +94,7 @@ def test_match_engine_flags_patterns(patterns_dir: Path) -> None:
         ".Trashes",
         "Backups.backupdb",
         ".DocumentRevisions-V100",
-        "Icon1",
-        "._Icon1",
+        "._DotUnderscoreFile.txt",
         "Desktop.ini",
         "lowercase/desktop.ini",
         "ehthumbs.db",
