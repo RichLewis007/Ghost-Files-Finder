@@ -64,7 +64,7 @@ class MainWindow(QMainWindow):
         self._scan_running = False
         self._pause_requested = False
 
-        self.setWindowTitle("Show Excluded and Ignored")
+        self.setWindowTitle("Ghost Files Finder")
         self.resize(1200, 800)
         logger.debug("MainWindow initialized: root=%s filter=%s", root_path, filter_file)
 
@@ -399,7 +399,7 @@ class MainWindow(QMainWindow):
         # Confirm with the user before quitting the application.
         response = QMessageBox.question(
             self,
-            "Quit Show Excluded and Ignored",
+            "Quit Ghost Files Finder",
             "Quit the application and discard the currently collected results?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No,

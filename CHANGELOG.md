@@ -29,13 +29,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Results footer now shows live file/folder totals plus highlighted counts, and the tree exposes “Expand all” / “Collapse all” controls.
 - Clearing the search field immediately re-runs the filter so visible results reset without extra clicks.
 - Modal scanning dialog mirrors footer progress (long-path friendly) and hosts Scan / Pause / Cancel buttons.
-- macOS builds now show “Show Excluded” as the app name and use a bundled window icon.
+- macOS builds now show “Ghost Files Finder” as the app name and use a bundled window icon.
 
 ### Changed
 
 - Removed the `**/Icon?` filter rule and its Icon sample data from fixtures and tests.
 - `create-samples.py` now relies solely on the shared fixture helper; manual extras were removed to avoid divergence.
 - Replaced module/class/function docstrings with block comments to standardise documentation style project-wide.
+- Updated app metadata and configuration directories to use the “Ghost Files Finder” identity and credit Rich Lewis as the author.
 
 ## [0.1.0] - 2025-11-08
 

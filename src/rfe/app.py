@@ -9,7 +9,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
 
-# Application entry point for Show Excluded and Ignored.
+# Application entry point for Ghost Files Finder.
 from .main_window import MainWindow
 from .services import config as config_service
 from .services import logger as logger_service
@@ -17,13 +17,13 @@ from .services import logger as logger_service
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_FILTER_FILE = REPO_ROOT / "tests" / "data" / "rclone-filter-list.txt"
 DEFAULT_ROOT_PATH = Path("/Users/rich/Downloads")
-APP_ICON_PATH = REPO_ROOT / "src" / "rfe" / "resources" / "icons" / "app.png"
+APP_ICON_PATH = REPO_ROOT / "src" / "rfe" / "resources" / "icons" / "GhostFilesFinder.icns"
 
 
 def _build_arg_parser() -> argparse.ArgumentParser:
     # Construct and return the CLI argument parser.
     parser = argparse.ArgumentParser(
-        prog="show-excluded-and-ignored",
+        prog="ghost-files-finder",
         description="Visualize files and folders matched by rclone-style filter rules.",
     )
     parser.add_argument(
@@ -56,11 +56,13 @@ def _ensure_qapp() -> QApplication:
     QApplication.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling, True)
     QApplication.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps, True)
     app = QApplication(sys.argv)
-    app_name = "Show Excluded"
+    app_name = "Ghost Files Finder"
+    org_name = "Rich Lewis"
+    org_domain = "ghost-files-finder.local"
     app.setApplicationName(app_name)
     app.setApplicationDisplayName(app_name)
-    app.setOrganizationName("RichLewis")
-    app.setOrganizationDomain("show-excluded-and-ignored.local")
+    app.setOrganizationName(org_name)
+    app.setOrganizationDomain(org_domain)
     if APP_ICON_PATH.exists():
         app.setWindowIcon(QIcon(str(APP_ICON_PATH)))
     return app

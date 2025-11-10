@@ -1,4 +1,5 @@
-# Top-level package for Show Excluded and Ignored.
-__all__ = ["__version__"]
+# Top-level package for Ghost Files Finder.
+__all__ = ["__author__", "__version__"]
 
 __version__ = "0.1.0"
+__author__ = "Rich Lewis"

@@ -1,1 +1,1 @@
-"""Test suite package for Show Excluded and Ignored."""
+# Test suite package for Ghost Files Finder.

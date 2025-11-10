@@ -8,8 +8,8 @@ from pathlib import Path
 from platformdirs import PlatformDirs
 from PySide6.QtCore import QByteArray, QSettings
 
-APP_NAME = "ShowExcludedAndIgnored"
-ORG_NAME = "RichLewis"
+APP_NAME = "GhostFilesFinder"
+ORG_NAME = "Rich Lewis"
 
 _KEY_WINDOW_GEOMETRY = "window/geometry"
 _KEY_LAST_ROOT = "paths/last_root"

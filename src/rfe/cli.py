@@ -6,7 +6,7 @@ from pathlib import Path
 from .models.match_engine import MatchEngine
 from .models.rules_model import parse_filter_file
 
-# Simple CLI utilities for Show Excluded and Ignored.
+# Simple CLI utilities for Ghost Files Finder.
 
 
 def build_parser() -> argparse.ArgumentParser:

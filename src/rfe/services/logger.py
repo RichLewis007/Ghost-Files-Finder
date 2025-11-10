@@ -15,7 +15,7 @@ def _get_log_path() -> Path:
     dirs = PlatformDirs(appname=APP_NAME, appauthor=ORG_NAME)
     path = Path(dirs.user_log_dir)
     path.mkdir(parents=True, exist_ok=True)
-    return path / "show-excluded-and-ignored.log"
+    return path / "ghost-files-finder.log"
 
 
 def configure(*, log_level: str = "INFO") -> None:

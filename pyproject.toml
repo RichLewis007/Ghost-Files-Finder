@@ -1,5 +1,5 @@
 [project]
-name = "show-excluded-and-ignored"
+name = "ghost-files-finder"
 version = "0.1.0"
 description = "Desktop app to visualize files matched by rclone filter rules."
 authors = [{ name = "Rich Lewis", email = "rich@example.com" }]
@@ -26,8 +26,8 @@ dev = [
 ]
 
 [project.scripts]
-show-excluded-and-ignored = "rfe.app:main"
-sei-cli = "rfe.cli:main"
+ghost-files-finder = "rfe.app:main"
+gff-cli = "rfe.cli:main"
 
 [tool.uv]
 package = true

@@ -1,6 +1,8 @@
-# Show Excluded and Ignored
+# Ghost Files Finder
 
 Desktop app for exploring files that match rclone filter rules. Built with PySide6 and managed with `uv`.
+
+**Author:** Rich Lewis (@RichLewis007)
 
 ## Features
 
@@ -26,7 +28,7 @@ Desktop app for exploring files that match rclone filter rules. Built with PySid
    ```
 1. Launch the app in dev mode:
    ```
-   uv run show-excluded-and-ignored
+   uv run ghost-files-finder
    ```
 
 ## Tests
