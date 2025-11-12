@@ -38,6 +38,10 @@ logger = logging.getLogger(__name__)
 ICON_ROOT = Path(__file__).resolve().parent / "resources" / "icons" / "feather"
 
 
+# Enable developer shortcuts when true (e.g., auto-preload scan inputs).
+DEBUG_MODE = True
+
+
 def _icon(name: str) -> QIcon:
     # Load a Feather icon from the bundled resources, logging a warning if missing.
     path = ICON_ROOT / f"{name}.svg"
@@ -76,8 +80,8 @@ class MainWindow(QMainWindow):
         self._scan_running = False
         self._pause_requested = False
         self._progress_dialog: ScanProgressDialog | None = None
-        self._root_selected = False
-        self._rules_selected = False
+        self._root_selected = DEBUG_MODE and self._root_path.exists()
+        self._rules_selected = DEBUG_MODE and self._filter_file.exists()
 
         self.setWindowTitle("Ghost Files Finder")
         self.resize(1200, 800)
@@ -269,7 +273,7 @@ class MainWindow(QMainWindow):
         self._set_scan_running(True)
 
         progress_dialog = self._show_progress_dialog()
-        progress_dialog.prepare_for_scan(self._root_path)
+        progress_dialog.prepare_for_scan(self._root_path, self._filter_file)
 
         worker = ScanWorker(root_path=self._root_path, rules=self.rules_panel.rules)
         thread = QThread(self)
@@ -308,20 +312,39 @@ class MainWindow(QMainWindow):
         if self._progress_dialog is not None and not self._scan_running:
             self._progress_dialog.set_running(False)
 
-    def _on_scan_progress(self, scanned: int, matched: int, current_path: str) -> None:
+    def _on_scan_progress(
+        self,
+        files: int,
+        folders: int,
+        matches: int,
+        elapsed: float,
+        current_path: str,
+    ) -> None:
         # Update progress feedback while scanning.
-        parts = [f"Scanning… {matched:,} matches / {scanned:,} items"]
+        parts = [
+            "Scanning…",
+            f"Files: {files:,}",
+            f"Folders: {folders:,}",
+            f"Matches: {matches:,}",
+            f"Elapsed: {round(elapsed):,}s",
+        ]
         if current_path and current_path not in {"", "done"}:
             parts.append(current_path)
         self.status_bar.set_message(" — ".join(parts))
         if self._progress_dialog is not None:
-            self._progress_dialog.update_progress(scanned, matched, current_path)
+            self._progress_dialog.update_progress(
+                files,
+                folders,
+                matches,
+                elapsed,
+                current_path,
+            )
 
     def _on_scan_finished(self, payload: ScanPayload) -> None:
         # Handle completion of a scan by updating the tree and status.
         self.tree_panel.load_nodes(payload.nodes, self.rules_panel.rules)
         duration = payload.stats.duration
-        duration_text = f"{duration:.2f}s" if duration is not None else "n/a"
+        duration_text = f"{round(duration):.0f}s" if duration is not None else "n/a"
         self.status_bar.set_message(
             f"Scan complete: {payload.stats.matched:,} matches across "
             f"{payload.stats.scanned:,} items in {duration_text}",
@@ -334,7 +357,6 @@ class MainWindow(QMainWindow):
         self._set_scan_running(False)
         if self._progress_dialog is not None:
             self._progress_dialog.show_finished()
-            self._progress_dialog.close()
 
     def _on_scan_error(self, message: str) -> None:
         # Surface scan failures to the user.
@@ -344,11 +366,10 @@ class MainWindow(QMainWindow):
         self._set_scan_running(False)
         if self._progress_dialog is not None:
             self._progress_dialog.show_error("Scan failed.")
-            self._progress_dialog.close()
 
     def _on_scan_cancelled(self) -> None:
         # Reset UI after a cancelled scan.
-        status_text = "Scan paused." if self._pause_requested else "Scan cancelled."
+        status_text = "Scan paused" if self._pause_requested else "Scan cancelled"
         self.status_bar.set_message(status_text)
         self.status_bar.set_progress(None)
         self._set_controls_enabled(True)
@@ -356,7 +377,6 @@ class MainWindow(QMainWindow):
         self._pause_requested = False
         if self._progress_dialog is not None:
             self._progress_dialog.show_status(status_text)
-            self._progress_dialog.close()
 
     def _on_scan_thread_finished(self) -> None:
         # Clear references once the scan thread exits.
@@ -465,6 +485,10 @@ class MainWindow(QMainWindow):
 
     def _prompt_exit(self) -> None:
         # Confirm with the user before quitting the application.
+        if DEBUG_MODE:
+            self.close()
+            return
+
         response = QMessageBox.question(
             self,
             "Quit Ghost Files Finder",
@@ -776,6 +800,8 @@ class MainWindow(QMainWindow):
 
     def _cancel_scan(self) -> None:
         if not self._scan_running:
+            if self._progress_dialog is not None:
+                self._progress_dialog.hide()
             return
         self._pause_requested = False
         self.status_bar.set_message("Scan cancelled.")

@@ -20,6 +20,8 @@ class ScanStats:
 
     scanned: int = 0
     matched: int = 0
+    files: int = 0
+    folders: int = 0
     start_time: float = field(default_factory=monotonic)
     end_time: float | None = None
 
@@ -42,7 +44,7 @@ class ScanPayload:
 class ScanWorker(QObject):
     # Worker object that scans a filesystem subtree for rule matches.
 
-    progress = Signal(int, int, str)
+    progress = Signal(int, int, int, float, str)  # files, folders, matches, elapsed, path
     finished = Signal(object)  # ScanPayload
     error = Signal(str)
     cancelled = Signal()
@@ -112,17 +114,36 @@ class ScanWorker(QObject):
                     # Skip unreadable entries but continue scanning.
                     continue
 
-                stats.scanned += 1
-                if stats.scanned % emit_interval == 0:
-                    self.progress.emit(stats.scanned, stats.matched, str(abs_path))
-
                 node = self._build_node(result)
                 nodes[result.rel_path] = node
                 if result.decision.matched:
                     stats.matched += 1
 
+                if node.type == "file":
+                    stats.files += 1
+                else:
+                    stats.folders += 1
+
+                stats.scanned += 1
+                if stats.scanned % emit_interval == 0 or stats.scanned == 1:
+                    elapsed = monotonic() - stats.start_time
+                    self.progress.emit(
+                        stats.files,
+                        stats.folders,
+                        stats.matched,
+                        elapsed,
+                        str(abs_path),
+                    )
+
         stats.end_time = monotonic()
-        self.progress.emit(stats.scanned, stats.matched, "done")
+        elapsed = stats.end_time - stats.start_time
+        self.progress.emit(
+            stats.files,
+            stats.folders,
+            stats.matched,
+            elapsed,
+            "done",
+        )
 
         tree_nodes = self._build_tree(nodes, root_key)
         return ScanPayload(nodes=tree_nodes, stats=stats)
