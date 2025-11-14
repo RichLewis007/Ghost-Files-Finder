@@ -1,6 +1,6 @@
 [project]
 name = "ghost-files-finder"
-version = "0.1.0"
+version = "1.0.0"
 description = "Desktop app to visualize files matched by rclone filter rules."
 authors = [{ name = "Rich Lewis", email = "rich@example.com" }]
 readme = "README.md"

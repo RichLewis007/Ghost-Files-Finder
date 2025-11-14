@@ -19,6 +19,10 @@ DEFAULT_FILTER_FILE = REPO_ROOT / "tests" / "data" / "rclone-filter-list.txt"
 DEFAULT_ROOT_PATH = Path("/Users/rich/Downloads")
 APP_ICON_PATH = REPO_ROOT / "src" / "rfe" / "resources" / "icons" / "GhostFilesFinder.icns"
 
+# Application version - update in pyproject.toml when changing
+APP_VERSION = "1.0.0"
+COPYRIGHT_YEAR = "2025"
+
 
 def _build_arg_parser() -> argparse.ArgumentParser:
     # Construct and return the CLI argument parser.

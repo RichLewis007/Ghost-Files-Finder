@@ -5,12 +5,13 @@ import csv
 import json
 import logging
 import re
+import sys
 from collections.abc import Callable, Iterable
 from datetime import datetime
 from pathlib import Path
 
 from PySide6.QtCore import QSize, Qt, QThread
-from PySide6.QtGui import QAction, QCloseEvent, QIcon
+from PySide6.QtGui import QAction, QCloseEvent, QIcon, QShowEvent
 from PySide6.QtWidgets import (
     QCheckBox,
     QDockWidget,
@@ -28,6 +29,7 @@ from .models.rules_model import parse_filter_file
 from .services.config import SettingsStore
 from .services.formatting import format_bytes, format_match_bytes
 from .services.sounds import SoundManager, build_default_sound_manager
+from .views.about_dialog import AboutDialog
 from .views.rules_panel import RulesPanel
 from .views.scan_progress_dialog import ScanProgressDialog
 from .views.search_bar import SearchBar
@@ -88,6 +90,7 @@ class MainWindow(QMainWindow):
         self._current_match_bytes = 0
         self._root_selected = DEBUG_MODE and self._root_path.exists()
         self._rules_selected = DEBUG_MODE and self._filter_file.exists()
+        self._about_shown = False
 
         self.setWindowTitle("Ghost Files Finder")
         self.resize(1200, 800)
@@ -178,6 +181,16 @@ class MainWindow(QMainWindow):
         self.quit_action.setToolTip("Quit Ghost Files Finder")
         toolbar.addAction(self.quit_action)
 
+        # macOS About menu (appears in system menu bar under app name)
+        if sys.platform == "darwin":
+            # Enable native menu bar so macOS handles About menu automatically
+            self.menuBar().setNativeMenuBar(True)
+            # Add About action - Qt will automatically move it to macOS system menu bar
+            about_action = QAction("About Ghost Files Finder", self)
+            about_action.triggered.connect(self._show_about_dialog)
+            # On macOS, actions with "About" in name automatically go to system menu bar
+            self.menuBar().addAction(about_action)
+
         file_menu = self.menuBar().addMenu("&File")
         file_menu.addAction(self.scan_action)
         file_menu.addAction(self.select_root_action)
@@ -219,6 +232,18 @@ class MainWindow(QMainWindow):
             self.restoreGeometry(geometry)
         else:
             logger.debug("No previous window geometry stored.")
+
+    def showEvent(self, event: QShowEvent) -> None:
+        # Show About dialog on first launch, after main window is positioned.
+        super().showEvent(event)
+        if not self._about_shown:
+            self._about_shown = True
+            # Ensure the window is fully positioned before showing the dialog
+            self.raise_()
+            self.activateWindow()
+            # Use QTimer to ensure geometry is fully applied, or show immediately
+            # Since showEvent happens after show(), geometry should be restored
+            self._show_about_dialog()
 
     def closeEvent(self, event: QCloseEvent) -> None:
         # Persist state and ensure background work stops before closing.
@@ -827,6 +852,18 @@ class MainWindow(QMainWindow):
         if hasattr(self, "scan_action"):
             ready = self._root_selected and self._rules_selected and self._controls_enabled
             self.scan_action.setEnabled(ready and not running)
+
+    def _show_about_dialog(self) -> None:
+        # Show the About dialog with version and copyright information.
+        # Late import to avoid circular dependency
+        from . import app as app_module
+
+        about_dialog = AboutDialog(
+            self,
+            version=app_module.APP_VERSION,
+            copyright_year=app_module.COPYRIGHT_YEAR,
+        )
+        about_dialog.exec()
 
     def _wrap_with_click_sound(
         self,
