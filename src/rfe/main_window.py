@@ -45,6 +45,7 @@ from .views.about_dialog import AboutDialog
 from .views.rules_panel import RulesPanel
 from .views.scan_progress_dialog import ScanProgressDialog
 from .views.search_bar import SearchBar
+from .views.settings_dialog import SettingsDialog
 from .views.status_bar import AppStatusBar
 from .views.tree_panel import TreePanel
 from .workers.delete_worker import DeleteResult, DeleteWorker
@@ -137,7 +138,15 @@ class MainWindow(QMainWindow):
 
         self._create_actions()
         self._make_connections()
-        self._sound_manager.set_enabled(self.tree_panel.ui_sounds_enabled())
+        # Load sound settings from persistent storage
+        ui_sounds_enabled = self._settings_store.load_ui_sounds_enabled(default=True)
+        self._sound_manager.set_enabled(ui_sounds_enabled)
+        self._sound_manager.set_completion_enabled(
+            self._settings_store.load_completion_sound_enabled(default=True)
+        )
+        # Sync tree panel checkbox with settings
+        if hasattr(self.tree_panel, "_sounds_toggle"):
+            self.tree_panel._sounds_toggle.setChecked(ui_sounds_enabled)
 
     def _create_actions(self) -> None:
         # Build the window toolbar and key QAction objects.
@@ -184,6 +193,13 @@ class MainWindow(QMainWindow):
         toolbar.addAction(self.export_action)
 
         toolbar.addSeparator()
+
+        # Settings button on the far right
+        self.settings_action = QAction("Settings..", self)
+        self.settings_action.triggered.connect(self._show_settings_dialog)
+        self.settings_action.setIcon(_icon("settings"))
+        self.settings_action.setToolTip("Open settings")
+        toolbar.addAction(self.settings_action)
 
         self.quit_action = QAction("Quit", self)
         self.quit_action.triggered.connect(
@@ -513,7 +529,7 @@ class MainWindow(QMainWindow):
         self._update_action_states()
         self._set_scan_running(False)
         self._scan_paused = False
-        self._sound_manager.play("complete")
+        self._sound_manager.play("complete", force_completion=True)
         if self._progress_dialog is not None:
             self._progress_dialog.set_paused(False)
             self._progress_dialog.show_finished()
@@ -1018,7 +1034,24 @@ class MainWindow(QMainWindow):
             self._progress_dialog.set_paused(False)
 
     def _on_sound_toggled(self, enabled: bool) -> None:
+        # Handle UI sounds checkbox toggle from tree panel.
+        # This is now controlled by settings, but keep for backward compatibility.
         self._sound_manager.set_enabled(enabled)
+        self._settings_store.save_ui_sounds_enabled(enabled)
+
+    def _show_settings_dialog(self) -> None:
+        # Show the settings dialog and apply changes.
+        dialog = SettingsDialog(self._settings_store, self)
+        if dialog.exec():
+            # Settings were saved, apply them
+            ui_sounds_enabled = self._settings_store.load_ui_sounds_enabled(default=True)
+            self._sound_manager.set_enabled(ui_sounds_enabled)
+            self._sound_manager.set_completion_enabled(
+                self._settings_store.load_completion_sound_enabled(default=True)
+            )
+            # Sync tree panel checkbox with updated settings
+            if hasattr(self.tree_panel, "_sounds_toggle"):
+                self.tree_panel._sounds_toggle.setChecked(ui_sounds_enabled)
 
     def _update_action_states(self) -> None:
         # Ensure toolbar actions reflect current selection and data.

@@ -40,6 +40,7 @@ class SoundManager(QObject):
         super().__init__(parent)
         self._entries: dict[str, _SoundEntry] = {}
         self._enabled = True
+        self._completion_enabled = True
         self._default_volume = max(0.0, min(default_volume, 1.0))
         for name, path in sounds.items():
             self.register(name, path)
@@ -52,7 +53,12 @@ class SoundManager(QObject):
         self._entries[name] = entry
 
     def set_enabled(self, enabled: bool) -> None:
+        # Enable/disable UI sounds (all sounds except completion sound).
         self._enabled = enabled
+
+    def set_completion_enabled(self, enabled: bool) -> None:
+        # Enable/disable completion sound specifically.
+        self._completion_enabled = enabled
 
     def set_volume(self, volume: float) -> None:
         normalised = self._normalise_volume(volume)
@@ -62,9 +68,18 @@ class SoundManager(QObject):
             for bundle in entry.bundles:
                 bundle.output.setVolume(normalised)
 
-    def play(self, name: str) -> None:
-        if not self._enabled:
-            return
+    def play(self, name: str, *, force_completion: bool = False) -> None:
+        # Play a sound by name. If force_completion is True, bypasses the general enabled
+        # check and only checks completion_enabled (used for scan completion sound).
+        if force_completion:
+            # For completion sounds, only check completion_enabled
+            if not self._completion_enabled:
+                return
+        else:
+            # For UI sounds, check the general enabled flag
+            if not self._enabled:
+                return
+
         entry = self._entries.get(name)
         if entry is None:
             return
