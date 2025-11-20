@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QFont, QPixmap, QShowEvent
 from PySide6.QtWidgets import (
     QDialog,
@@ -80,6 +80,10 @@ class AboutDialog(QDialog):
         ok_button = QPushButton("OK", self)
         ok_button.clicked.connect(self.accept)
         ok_button.setDefault(True)
+        ok_button.setMinimumSize(QSize(120, 40))  # Make button larger (width, height)
+        ok_button_font = ok_button.font()
+        ok_button_font.setPointSize(ok_button_font.pointSize() + 2)
+        ok_button.setFont(ok_button_font)
 
         # Layout
         main_layout = QVBoxLayout(self)

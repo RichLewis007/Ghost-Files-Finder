@@ -1,4 +1,7 @@
 # Scan progress dialog.
+# The structure is now:
+# Create widget → Configure widget → Create layout → Add widget to layout
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -6,11 +9,10 @@ from html import escape
 from pathlib import Path
 
 from PySide6.QtCore import QSize, Qt, Signal
-from PySide6.QtGui import QFont, QIcon, QPixmap, QResizeEvent
+from PySide6.QtGui import QColor, QFont, QIcon, QPainter, QPaintEvent, QPixmap, QResizeEvent
 from PySide6.QtWidgets import (
     QDialog,
     QFrame,
-    QGridLayout,
     QHBoxLayout,
     QLabel,
     QPushButton,
@@ -22,6 +24,34 @@ from PySide6.QtWidgets import (
 from rfe.services.formatting import format_match_bytes
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
+
+
+class TransparentOverlay(QWidget):
+    # Widget with semi-transparent background for overlay effect.
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        self._background_color = QColor(240, 240, 240, 128)  # 50% opacity
+
+    def setBackgroundColor(self, color: QColor) -> None:
+        # Set the semi-transparent background color.
+        self._background_color = color
+        self.update()
+
+    def paintEvent(self, event: QPaintEvent) -> None:
+        # Paint semi-transparent background.
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.fillRect(self.rect(), self._background_color)
+        super().paintEvent(event)
+
+    def resizeEvent(self, event: QResizeEvent) -> None:
+        # Update when resized.
+        super().resizeEvent(event)
+        self.update()
+
+
 BADGE_RUNNING_PATH = PROJECT_ROOT / "assets" / "in-app-ghost-pic.png"
 BADGE_FINISHED_PATH = Path(__file__).resolve().parents[1] / "resources" / "ghost-scan-finished.png"
 FEATHER_ICON_DIR = Path(__file__).resolve().parents[1] / "resources" / "icons" / "feather"
@@ -42,24 +72,33 @@ class ScanProgressDialog(QDialog):
         play_sound: Callable[[str], None] | None = None,
     ) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Scanning…")
+
+        # ------------------------------------------------------------------
+        # "Scanning" modal dialog
+        # ------------------------------------------------------------------
+
+        self.setWindowTitle("Scaning Dialog")
         self.setWindowModality(Qt.WindowModality.ApplicationModal)
         self.setWindowFlag(Qt.WindowType.WindowCloseButtonHint, False)
-        self.resize(900, 300)
+        self.resize(800, 300)
         self._play_sound = play_sound
+
+        # ------------------------------------------------------------------
+        # scanning title
 
         self._summary_label = QLabel("Scanning...", self)
         self._summary_label.setWordWrap(True)
         summary_font = self._summary_label.font()
-        summary_font.setPointSize(summary_font.pointSize() + 6)
+        summary_font.setPointSize(int(summary_font.pointSize() * 2))
         summary_font.setBold(True)
         self._summary_label.setFont(summary_font)
         self._summary_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._summary_label.setSizePolicy(
             QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         )
-        # Store the original font for restoration after processing
-        self._original_summary_font = QFont(summary_font)
+
+        # ------------------------------------------------------------------
+        # source folder
 
         bold_font = QFont(self.font())
         bold_font.setBold(True)
@@ -73,6 +112,15 @@ class ScanProgressDialog(QDialog):
             QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         )
 
+        source_line = QHBoxLayout()
+        source_line.setSpacing(6)
+        source_prefix = QLabel("Scanning source folder:", self)
+        source_line.addWidget(source_prefix, 0)
+        source_line.addWidget(self._source_value, 1)
+
+        # ------------------------------------------------------------------
+        # rules file
+
         self._rules_value = QLabel("", self)
         self._rules_value.setFont(bold_font)
         self._rules_value.setWordWrap(True)
@@ -82,6 +130,14 @@ class ScanProgressDialog(QDialog):
             QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         )
 
+        rules_line = QHBoxLayout()
+        rules_line.setSpacing(6)
+        rules_prefix = QLabel("Rules file:", self)
+        rules_line.addWidget(rules_prefix, 0)
+        rules_line.addWidget(self._rules_value, 1)
+
+        # ------------------------------------------------------------------
+        # details box
         counts_layout = QVBoxLayout()
         counts_layout.setSpacing(6)
         counts_layout.setContentsMargins(16, 12, 16, 12)
@@ -151,23 +207,20 @@ class ScanProgressDialog(QDialog):
             QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         )
 
+        # ------------------------------------------------------------------
+        # badge image at top right
+
         self._badge_label = QLabel(self)
         self._badge_label.setVisible(False)
         self._set_badge_image(BADGE_RUNNING_PATH)
-        badge_layout = QVBoxLayout()
-        badge_layout.setContentsMargins(0, 0, 0, 0)
-        badge_layout.addStretch(1)
-        badge_layout.addWidget(
-            self._badge_label, alignment=Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignTop
-        )
+
+        # ------------------------------------------------------------------
+        # buttons
 
         button_layout = QHBoxLayout()
         button_layout.setSpacing(10)
-        self._scan_button = QPushButton("Scan", self)
-        self._scan_button.setIcon(self._load_icon("play"))
-        self._scan_button.setIconSize(QSize(28, 28))
-        self._scan_button.clicked.connect(self._on_scan_clicked)
-        button_layout.addWidget(self._scan_button)
+        # Add stretch at the beginning to center the buttons
+        button_layout.addStretch(1)
 
         self._pause_button = QPushButton("Pause", self)
         self._pause_button.setIcon(self._load_icon("pause"))
@@ -180,19 +233,13 @@ class ScanProgressDialog(QDialog):
         self._cancel_button.setIconSize(QSize(28, 28))
         self._cancel_button.clicked.connect(self._on_cancel_clicked)
         button_layout.addWidget(self._cancel_button)
+
+        # Add stretch at the end to center the buttons
+        button_layout.addStretch(1)
         self._paused = False
 
-        source_line = QHBoxLayout()
-        source_line.setSpacing(6)
-        source_prefix = QLabel("Scanning source folder:", self)
-        source_line.addWidget(source_prefix, 0)
-        source_line.addWidget(self._source_value, 1)
-
-        rules_line = QHBoxLayout()
-        rules_line.setSpacing(6)
-        rules_prefix = QLabel("Rules file:", self)
-        rules_line.addWidget(rules_prefix, 0)
-        rules_line.addWidget(self._rules_value, 1)
+        # ------------------------------------------------------------------
+        # details box
 
         details_layout = QVBoxLayout()
         details_layout.setSpacing(12)
@@ -205,60 +252,78 @@ class ScanProgressDialog(QDialog):
         counts_frame.setSizePolicy(
             QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         )
+        details_layout.addSpacing(10)  # add vertical spacing above counters box
         details_layout.addWidget(counts_frame, alignment=Qt.AlignmentFlag.AlignHCenter)
         details_layout.addStretch(1)
 
-        # Store references to widgets that should be hidden during processing
         self._details_widget = QWidget(self)
         self._details_widget.setLayout(details_layout)
-        self._counts_frame = counts_frame
-        self._badge_container = None  # Will be set below
 
-        main_layout = QGridLayout(self)
+        # ------------------------------------------------------------------
+        # Top row: title (centered) and badge (right-aligned)
+        # To truly center the title, we need to account for the badge width
+
+        top_row = QHBoxLayout()
+        top_row.setContentsMargins(0, 0, 0, 0)
+
+        # Add invisible spacer on left to match badge width (for true centering)
+        left_spacer = QWidget(self)
+        left_spacer.setFixedWidth(0)  # Will be updated when badge is set
+        self._left_spacer = left_spacer
+        top_row.addWidget(left_spacer)
+
+        # Add stretch, title, stretch to center the title
+        top_row.addStretch(1)
+        top_row.addWidget(self._summary_label, alignment=Qt.AlignmentFlag.AlignHCenter)
+        top_row.addStretch(1)
+
+        # Badge on the right
+        top_row.addWidget(
+            self._badge_label,
+            alignment=Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignTop,
+        )
+        self._badge_container = top_row  # Keep reference for compatibility
+
+        # ------------------------------------------------------------------
+        # Main vertical layout: top row, details, path, status, buttons
+        # ------------------------------------------------------------------
+
+        main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(16, 16, 16, 16)
-        main_layout.setHorizontalSpacing(16)
-        main_layout.setVerticalSpacing(12)
-        main_layout.setColumnStretch(0, 1)
-        main_layout.setColumnStretch(1, 0)
-        main_layout.addWidget(
-            self._summary_label,
-            0,
-            0,
-            1,
-            2,
-            Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop,
-        )
-        badge_container = QWidget(self)
-        badge_container.setLayout(badge_layout)
-        self._badge_container = badge_container
-        main_layout.addWidget(
-            badge_container,
-            0,
-            1,
-            2,
-            1,
-            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignTop,
-        )
-        main_layout.addWidget(self._details_widget, 1, 0)
-        main_layout.addWidget(self._path_label, 2, 0, 1, 2)
-        main_layout.addLayout(button_layout, 3, 0, 1, 2)
+        main_layout.setSpacing(12)
+        main_layout.addLayout(top_row)
+        main_layout.addWidget(self._details_widget)
+        main_layout.addWidget(self._path_label)
+        main_layout.addLayout(button_layout)
 
         self.setLayout(main_layout)
         self.set_running(False)
 
-        # Create overlay label for processing message (initially hidden)
-        self._processing_overlay = QLabel(self)
-        self._processing_overlay.setText("Please wait while scanned files are processed..")
-        self._processing_overlay.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._processing_overlay.setWordWrap(True)
-        self._processing_overlay.setStyleSheet(
+        # ------------------------------------------------------------------
+        # overlay message for processing scanned files
+        # ------------------------------------------------------------------
+
+        # Create overlay widget with semi-transparent background
+        self._processing_overlay = TransparentOverlay(self)
+        self._processing_overlay.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+
+        # Create label for the text inside the overlay
+        overlay_label = QLabel(self._processing_overlay)
+        # Use rich text/HTML to set background color behind just the text
+        overlay_label.setTextFormat(Qt.TextFormat.RichText)
+        overlay_label.setText(
+            '<span style="background-color: #f2f2f2; padding: 10px 20px;">Please wait while scanned files are processed..</span>'
+        )
+        overlay_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        overlay_label.setWordWrap(True)
+        overlay_label.setStyleSheet(
             """
             QLabel {
-                background-color: #f0f0f0;
+                background-color: transparent;
                 color: #333333;
                 border: none;
                 padding: 40px;
-                font-size: 18px;
+                font-size: 24px;
                 font-weight: bold;
             }
             """
@@ -266,7 +331,16 @@ class ScanProgressDialog(QDialog):
         processing_font = self.font()
         processing_font.setPointSize(processing_font.pointSize() + 4)
         processing_font.setBold(True)
-        self._processing_overlay.setFont(processing_font)
+        overlay_label.setFont(processing_font)
+
+        overlay_layout = QVBoxLayout(self._processing_overlay)
+        # Set margins: (left, top, right, bottom)
+        # Increase top margin to move text down, decrease to move it up
+        overlay_layout.setContentsMargins(
+            0, -40, 0, 0
+        )  # Adjust top value (currently 100) to control vertical position
+        overlay_layout.addWidget(overlay_label)
+
         self._processing_overlay.setVisible(False)
         self._processing_overlay.raise_()  # Ensure it's on top
 
@@ -293,7 +367,6 @@ class ScanProgressDialog(QDialog):
 
     def set_running(self, running: bool) -> None:
         # Toggle button availability based on scan activity.
-        self._scan_button.setEnabled(not running)
         self._pause_button.setEnabled(running)
         self._cancel_button.setEnabled(True)
         self._cancel_button.setText("Cancel" if running else "Close")
@@ -368,87 +441,35 @@ class ScanProgressDialog(QDialog):
             """
         )
         # Disable all buttons during processing
-        self._scan_button.setEnabled(False)
         self._pause_button.setEnabled(False)
         self._cancel_button.setEnabled(False)
         # Force immediate repaint so user sees the processing state
         self.repaint()
 
-    def show_finished(self) -> None:
+    def _show_completion(self, message: str, badge_path: Path) -> None:
         # Display completion message and reset controls.
-        # Hide processing overlay
+        # Hide processing overlay if visible
         self._processing_overlay.setVisible(False)
 
-        self._summary_label.setText("Finished Scanning")
-        # Restore original font size and size policy
-        self._summary_label.setFont(self._original_summary_font)
-        self._summary_label.setSizePolicy(
-            QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-        )
-        self._summary_label.setMinimumHeight(0)
-        self._summary_label.setObjectName("")  # Clear object name to remove stylesheet
-
-        # Show hidden content again (should already be visible, but ensure it is)
-        self._details_widget.setVisible(True)
-        self._path_label.setVisible(True)
+        self._summary_label.setText(message)
+        # Clear path label
         self._path_label.clear()
-        if self._badge_container is not None:
-            self._badge_container.setVisible(True)
-        self._set_badge_image(BADGE_FINISHED_PATH)
-        # Clear the processing stylesheet
+        self._set_badge_image(badge_path)
+        # Clear any processing stylesheet
         self.setStyleSheet("")
         self.set_running(False)
+
+    def show_finished(self) -> None:
+        # Display completion message and reset controls.
+        self._show_completion("Finished Scanning", BADGE_FINISHED_PATH)
 
     def show_error(self, message: str) -> None:
         # Display error feedback and reset controls.
-        # Hide processing overlay if visible
-        self._processing_overlay.setVisible(False)
+        self._show_completion(message, BADGE_RUNNING_PATH)
 
-        self._summary_label.setText(message)
-        # Restore original font size and size policy
-        self._summary_label.setFont(self._original_summary_font)
-        self._summary_label.setSizePolicy(
-            QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-        )
-        self._summary_label.setMinimumHeight(0)
-        self._summary_label.setObjectName("")  # Clear object name
-        # Show hidden content again (should already be visible)
-        self._details_widget.setVisible(True)
-        self._path_label.setVisible(True)
-        self._path_label.clear()
-        if self._badge_container is not None:
-            self._badge_container.setVisible(True)
-        self._set_badge_image(BADGE_RUNNING_PATH)
-        # Clear any processing stylesheet
-        self.setStyleSheet("")
-        self.set_running(False)
-
-    def show_status(self, message: str) -> None:
-        # Display an informational status update and reset controls.
-        # Hide processing overlay if visible
-        self._processing_overlay.setVisible(False)
-
-        self._summary_label.setText(message)
-        # Restore original font size and size policy
-        self._summary_label.setFont(self._original_summary_font)
-        self._summary_label.setSizePolicy(
-            QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-        )
-        self._summary_label.setMinimumHeight(0)
-        self._summary_label.setObjectName("")  # Clear object name
-        # Show hidden content again (should already be visible)
-        self._details_widget.setVisible(True)
-        self._path_label.setVisible(True)
-        self._path_label.clear()
-        if self._badge_container is not None:
-            self._badge_container.setVisible(True)
-        # Clear any processing stylesheet
-        self.setStyleSheet("")
-        self.set_running(False)
-        if "Finished" in message:
-            self._set_badge_image(BADGE_FINISHED_PATH)
-        else:
-            self._set_badge_image(BADGE_RUNNING_PATH)
+    def show_cancelled(self) -> None:
+        # Display cancellation message and reset controls.
+        self._show_completion("Scan cancelled", BADGE_RUNNING_PATH)
 
     def _load_icon(self, name: str) -> QIcon:
         icon_path = FEATHER_ICON_DIR / f"{name}.svg"
@@ -469,22 +490,25 @@ class ScanProgressDialog(QDialog):
 
     def _set_badge_image(self, path: Path) -> None:
         if not path.exists():
+            if hasattr(self, "_left_spacer"):
+                self._left_spacer.setFixedWidth(0)
             return
         pixmap = QPixmap(str(path))
         if pixmap.isNull():
+            if hasattr(self, "_left_spacer"):
+                self._left_spacer.setFixedWidth(0)
             return
         scaled = pixmap.scaledToHeight(128, Qt.TransformationMode.SmoothTransformation)
         self._badge_label.setPixmap(scaled)
         self._badge_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignTop)
         self._badge_label.setVisible(True)
+        # Update left spacer to match badge width for true centering
+        if hasattr(self, "_left_spacer"):
+            self._left_spacer.setFixedWidth(scaled.width())
 
     def _trigger_sound(self, sound_id: str) -> None:
         if self._play_sound is not None:
             self._play_sound(sound_id)
-
-    def _on_scan_clicked(self) -> None:
-        self._trigger_sound("primary")
-        self.scanRequested.emit()
 
     def _on_pause_clicked(self) -> None:
         if self._paused:

@@ -81,6 +81,11 @@ class ScanWorker(QObject):
         # Resume traversal after a pause.
         self._pause_event.set()
 
+    # ------------------------------------------------------------------
+    # run_scan returns None when the scan is cancelled.
+    # User clicks Cancel → request_cancel() sets flag → scan loop detects it →
+    # _run_scan() returns None → start() emits cancelled signal → UI handler runs.
+
     def start(self) -> None:
         # Entry point executed inside the worker thread.
         payload = self._run_scan()

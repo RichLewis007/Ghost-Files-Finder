@@ -534,7 +534,7 @@ class MainWindow(QMainWindow):
         self._scan_paused = False
         if self._progress_dialog is not None:
             self._progress_dialog.set_paused(False)
-            self._progress_dialog.show_status("Scan cancelled")
+            self._progress_dialog.show_cancelled()
 
     def _on_scan_thread_finished(self) -> None:
         # Clear references once the scan thread exits.
