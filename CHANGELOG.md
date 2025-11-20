@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Column sorting by clicking column headers with custom sorting for Size (numeric) and Modified (chronological) columns
 - Case-insensitive sorting for Name and Full Path columns
 - About dialog showing on app launch with version, copyright, and license information
-- macOS system menu "About Ghost Files Finder" item that appears in the macOS menu bar
+- macOS system menu "About Ghost Files Finder" and "Quit Ghost Files Finder" items that appear in the macOS menu bar following macOS standards
 - MIT License file added to project root
 - Time elapsed display in scanning dialog with minutes/seconds format when exceeding 59 seconds
 - UI Sounds checkbox in results pane footer to mute/unmute all application sounds
@@ -32,8 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed index validation errors in proxy model sorting to prevent Qt warnings
-- Fixed multi-monitor positioning for About dialog and main window
-- Fixed case-insensitive sorting implementation for Name and Full Path columns
+- Fixed multi-monitor positioning for About dialog and main window to launch on the last-used monitor
+- Fixed case-insensitive sorting implementation for Name and Full Path columns using Qt's built-in `setSortCaseSensitivity`
 - Improved About dialog timing to show after main window is fully visible
 
 ## [Unreleased]
