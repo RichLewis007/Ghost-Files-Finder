@@ -6,7 +6,7 @@ from html import escape
 from pathlib import Path
 
 from PySide6.QtCore import QSize, Qt, Signal
-from PySide6.QtGui import QFont, QIcon, QPixmap
+from PySide6.QtGui import QFont, QIcon, QPixmap, QResizeEvent
 from PySide6.QtWidgets import (
     QDialog,
     QFrame,
@@ -55,6 +55,11 @@ class ScanProgressDialog(QDialog):
         summary_font.setBold(True)
         self._summary_label.setFont(summary_font)
         self._summary_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._summary_label.setSizePolicy(
+            QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        )
+        # Store the original font for restoration after processing
+        self._original_summary_font = QFont(summary_font)
 
         bold_font = QFont(self.font())
         bold_font.setBold(True)
@@ -203,6 +208,12 @@ class ScanProgressDialog(QDialog):
         details_layout.addWidget(counts_frame, alignment=Qt.AlignmentFlag.AlignHCenter)
         details_layout.addStretch(1)
 
+        # Store references to widgets that should be hidden during processing
+        self._details_widget = QWidget(self)
+        self._details_widget.setLayout(details_layout)
+        self._counts_frame = counts_frame
+        self._badge_container = None  # Will be set below
+
         main_layout = QGridLayout(self)
         main_layout.setContentsMargins(16, 16, 16, 16)
         main_layout.setHorizontalSpacing(16)
@@ -219,6 +230,7 @@ class ScanProgressDialog(QDialog):
         )
         badge_container = QWidget(self)
         badge_container.setLayout(badge_layout)
+        self._badge_container = badge_container
         main_layout.addWidget(
             badge_container,
             0,
@@ -227,12 +239,36 @@ class ScanProgressDialog(QDialog):
             1,
             Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignTop,
         )
-        main_layout.addLayout(details_layout, 1, 0)
+        main_layout.addWidget(self._details_widget, 1, 0)
         main_layout.addWidget(self._path_label, 2, 0, 1, 2)
         main_layout.addLayout(button_layout, 3, 0, 1, 2)
 
         self.setLayout(main_layout)
         self.set_running(False)
+
+        # Create overlay label for processing message (initially hidden)
+        self._processing_overlay = QLabel(self)
+        self._processing_overlay.setText("Please wait while scanned files are processed..")
+        self._processing_overlay.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._processing_overlay.setWordWrap(True)
+        self._processing_overlay.setStyleSheet(
+            """
+            QLabel {
+                background-color: #f0f0f0;
+                color: #333333;
+                border: none;
+                padding: 40px;
+                font-size: 18px;
+                font-weight: bold;
+            }
+            """
+        )
+        processing_font = self.font()
+        processing_font.setPointSize(processing_font.pointSize() + 4)
+        processing_font.setBold(True)
+        self._processing_overlay.setFont(processing_font)
+        self._processing_overlay.setVisible(False)
+        self._processing_overlay.raise_()  # Ensure it's on top
 
     # ------------------------------------------------------------------
     # State helpers
@@ -296,24 +332,118 @@ class ScanProgressDialog(QDialog):
         minutes, seconds = divmod(total_seconds, 60)
         return f"{minutes:,}m {seconds:02d}s"
 
+    def resizeEvent(self, event: QResizeEvent) -> None:
+        # Update overlay position and size when dialog is resized
+        super().resizeEvent(event)
+        if self._processing_overlay.isVisible():
+            self._processing_overlay.setGeometry(0, 0, self.width(), self.height())
+
+    def show_processing(self) -> None:
+        # Display processing message overlay and grey out the dialog while files are processed.
+        # Position overlay to cover entire dialog
+        self._processing_overlay.setGeometry(0, 0, self.width(), self.height())
+        self._processing_overlay.setVisible(True)
+        self._processing_overlay.raise_()  # Bring to front
+
+        # Grey out the dialog by applying a stylesheet that makes everything appear disabled
+        # Use a muted color scheme and reduced contrast
+        self.setStyleSheet(
+            """
+            ScanProgressDialog {
+                background-color: #f0f0f0;
+                color: #666666;
+            }
+            QLabel {
+                color: #666666;
+            }
+            QPushButton {
+                background-color: #e0e0e0;
+                color: #999999;
+                border: 1px solid #cccccc;
+            }
+            QFrame {
+                border-color: #cccccc;
+                background-color: #f8f8f8;
+            }
+            """
+        )
+        # Disable all buttons during processing
+        self._scan_button.setEnabled(False)
+        self._pause_button.setEnabled(False)
+        self._cancel_button.setEnabled(False)
+        # Force immediate repaint so user sees the processing state
+        self.repaint()
+
     def show_finished(self) -> None:
         # Display completion message and reset controls.
+        # Hide processing overlay
+        self._processing_overlay.setVisible(False)
+
         self._summary_label.setText("Finished Scanning")
+        # Restore original font size and size policy
+        self._summary_label.setFont(self._original_summary_font)
+        self._summary_label.setSizePolicy(
+            QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        )
+        self._summary_label.setMinimumHeight(0)
+        self._summary_label.setObjectName("")  # Clear object name to remove stylesheet
+
+        # Show hidden content again (should already be visible, but ensure it is)
+        self._details_widget.setVisible(True)
+        self._path_label.setVisible(True)
         self._path_label.clear()
+        if self._badge_container is not None:
+            self._badge_container.setVisible(True)
         self._set_badge_image(BADGE_FINISHED_PATH)
+        # Clear the processing stylesheet
+        self.setStyleSheet("")
         self.set_running(False)
 
     def show_error(self, message: str) -> None:
         # Display error feedback and reset controls.
+        # Hide processing overlay if visible
+        self._processing_overlay.setVisible(False)
+
         self._summary_label.setText(message)
+        # Restore original font size and size policy
+        self._summary_label.setFont(self._original_summary_font)
+        self._summary_label.setSizePolicy(
+            QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        )
+        self._summary_label.setMinimumHeight(0)
+        self._summary_label.setObjectName("")  # Clear object name
+        # Show hidden content again (should already be visible)
+        self._details_widget.setVisible(True)
+        self._path_label.setVisible(True)
         self._path_label.clear()
+        if self._badge_container is not None:
+            self._badge_container.setVisible(True)
         self._set_badge_image(BADGE_RUNNING_PATH)
+        # Clear any processing stylesheet
+        self.setStyleSheet("")
         self.set_running(False)
 
     def show_status(self, message: str) -> None:
         # Display an informational status update and reset controls.
+        # Hide processing overlay if visible
+        self._processing_overlay.setVisible(False)
+
         self._summary_label.setText(message)
+        # Restore original font size and size policy
+        self._summary_label.setFont(self._original_summary_font)
+        self._summary_label.setSizePolicy(
+            QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        )
+        self._summary_label.setMinimumHeight(0)
+        self._summary_label.setObjectName("")  # Clear object name
+        # Show hidden content again (should already be visible)
+        self._details_widget.setVisible(True)
+        self._path_label.setVisible(True)
         self._path_label.clear()
+        if self._badge_container is not None:
+            self._badge_container.setVisible(True)
+        # Clear any processing stylesheet
+        self.setStyleSheet("")
         self.set_running(False)
         if "Finished" in message:
             self._set_badge_image(BADGE_FINISHED_PATH)

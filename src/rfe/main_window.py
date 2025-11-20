@@ -20,6 +20,7 @@ from PySide6.QtGui import (
     QShowEvent,
 )
 from PySide6.QtWidgets import (
+    QApplication,
     QCheckBox,
     QDockWidget,
     QFileDialog,
@@ -485,7 +486,15 @@ class MainWindow(QMainWindow):
 
     def _on_scan_finished(self, payload: ScanPayload) -> None:
         # Handle completion of a scan by updating the tree and status.
+        # Show processing state in dialog before the potentially long-running load_nodes call
+        if self._progress_dialog is not None:
+            self._progress_dialog.show_processing()
+            # Force Qt to process events and repaint the dialog immediately
+            QApplication.processEvents()
+
+        # This call can take a while with many files, but user now knows what's happening
         self.tree_panel.load_nodes(payload.nodes, self.rules_panel.rules)
+
         duration = payload.stats.duration
         duration_text = self._format_elapsed(duration) if duration is not None else "n/a"
         size_text = format_match_bytes(payload.stats.matched_bytes)
