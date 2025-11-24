@@ -72,5 +72,3 @@ uv run --extra dev pytest tests/integration/test_scanner_finds_excluded_patterns
 
 Core scanning workflow, rule loading, and results interactions are in place.
 Performance optimizations ensure smooth operation with large datasets (nodes with 500+ children).
-Refer to `local/program-specifications.md` for the roadmap and planned milestones.
-Refer to `local/debugging-performance-issues.md` for performance troubleshooting guidance.
