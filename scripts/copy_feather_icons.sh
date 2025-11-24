@@ -6,7 +6,7 @@
 set -euo pipefail
 
 SRC_DIR="/Users/rich/temp/feather-icons/node_modules/feather-icons/dist/icons"
-DEST_DIR="/Users/rich/dev/github/richlewis007/show-excluded-and-ignored/src/rfe/resources/icons/feather"
+DEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/src/rfe/resources/icons/feather"
 TARGET_STROKE_WIDTH="1.3"
 
 ICONS=(

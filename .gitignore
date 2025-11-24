@@ -1,11 +1,9 @@
-# Documentation drafts (published specs are tracked already)
-docs/
-
-# local only files
+# local-only files
+local/
+temp/
 # check.sh
 # run.sh
 # test.sh
-temp/
 
 # Python version managers
 .python-version

@@ -78,7 +78,7 @@ class ScanProgressDialog(QDialog):
         # "Scanning" modal dialog
         # ------------------------------------------------------------------
 
-        self.setWindowTitle("Scaning Dialog")
+        self.setWindowTitle("Scanning Dialog")
         self.setWindowModality(Qt.WindowModality.ApplicationModal)
         self.setWindowFlag(Qt.WindowType.WindowCloseButtonHint, False)
         self.resize(800, 300)
@@ -115,7 +115,7 @@ class ScanProgressDialog(QDialog):
 
         source_line = QHBoxLayout()
         source_line.setSpacing(6)
-        source_prefix = QLabel("Scanning source folder:", self)
+        source_prefix = QLabel("Scanning:", self)
         source_line.addWidget(source_prefix, 0)
         source_line.addWidget(self._source_value, 1)
 

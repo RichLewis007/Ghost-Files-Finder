@@ -492,7 +492,9 @@ class MainWindow(QMainWindow):
             f"Elapsed: {self._format_elapsed(elapsed)}",
         ]
         if current_path and current_path not in {"", "done"}:
-            parts.append(current_path)
+            # Truncate long paths to prevent window resizing
+            truncated_path = self._truncate_path(current_path)
+            parts.append(truncated_path)
         self.status_bar.set_message(" — ".join(parts))
         if self._progress_dialog is not None:
             self._progress_dialog.update_progress(
@@ -1075,6 +1077,22 @@ class MainWindow(QMainWindow):
             return f"{total_seconds:,}s"
         minutes, seconds = divmod(total_seconds, 60)
         return f"{minutes:,}m {seconds:02d}s"
+
+    @staticmethod
+    def _truncate_path(path: str, max_length: int = 80) -> str:
+        # Truncate a file path to prevent window resizing from very long paths.
+        # Shows the beginning and end of the path with ellipsis in the middle.
+        if len(path) <= max_length:
+            return path
+        # Reserve space for ellipsis and some characters on each side
+        ellipsis = "…"
+        available = max_length - len(ellipsis)
+        if available < 20:  # Too short, just truncate
+            return path[: max_length - 1] + ellipsis
+        # Show start and end of path
+        start_len = available // 2
+        end_len = available - start_len
+        return path[:start_len] + ellipsis + path[-end_len:]
 
     @staticmethod
     def _format_mtime(timestamp: float | None) -> str | None:

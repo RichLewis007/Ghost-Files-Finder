@@ -4,5 +4,5 @@
 
 __all__ = ["__author__", "__version__"]
 
-__version__ = "0.1.0"
+__version__ = "1.0.0"
 __author__ = "Rich Lewis"
