@@ -49,6 +49,7 @@ def fixture_patterns_dir(tmp_path: Path) -> Path:
     (root / "temp.tmp").touch()
     (root / "backup.bak").touch()
     (root / "document.~lock.test#").touch()
+    # Note: ~$doc.docx is created but NOT expected to match - the pattern is commented out
     (root / "~$doc.docx").touch()
     (root / "download.part").touch()
     (root / "chrome.crdownload").touch()
@@ -114,7 +115,8 @@ def test_match_engine_flags_patterns(patterns_dir: Path) -> None:
         "node_modules",
         ".cache",
         ".cocoapods",
-        "dist",
+        # Note: dist is NOT excluded - the pattern ## - **/dist/** is commented out
+        # because dist folders are not always temp files
         "build",
         "coverage",
         "project.egg-info",

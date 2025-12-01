@@ -37,7 +37,7 @@ class AppStatusBar(QStatusBar):
         self._full_message = message
         self._update_elided_text()
 
-    def resizeEvent(self, event: QResizeEvent) -> None:
+    def resizeEvent(self, event: QResizeEvent) -> None:  # pyright: ignore[reportIncompatibleMethodOverride]
         # Re-elide text when status bar is resized.
         super().resizeEvent(event)
         self._update_elided_text()

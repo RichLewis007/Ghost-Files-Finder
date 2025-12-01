@@ -77,8 +77,8 @@
 - **/*.bak
 # LibreOffice/OOo lock files
 - **/*.~lock.*#
-# MS Office autosave/temp files. Might want these to recover a file, so keeping.
-## - **/~$*
+# MS Office autosave/temp files (e.g., ~$doc.docx)
+- **/~$*
 # Incomplete download/temp files
 - **/*.part
 # Chrome download-in-progress

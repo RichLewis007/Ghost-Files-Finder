@@ -128,7 +128,7 @@ def _set_macos_process_metadata(name: str) -> None:
 def _ensure_qapp() -> QApplication:
     # Return the active QApplication, creating one if needed.
     existing = QApplication.instance()
-    if existing is not None:
+    if existing is not None and isinstance(existing, QApplication):
         return existing
 
     app_name = "Ghost Files Finder"

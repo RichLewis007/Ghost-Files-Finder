@@ -1058,8 +1058,9 @@ class MainWindow(QMainWindow):
     def _update_action_states(self) -> None:
         # Ensure toolbar actions reflect current selection and data.
         has_selection = bool(self.tree_panel.selected_nodes())
+        # Note: delete_action is currently commented out, but kept for potential future use
         if hasattr(self, "delete_action"):
-            self.delete_action.setEnabled(self._controls_enabled and has_selection)
+            self.delete_action.setEnabled(self._controls_enabled and has_selection)  # pyright: ignore[reportAttributeAccessIssue]
         has_data = bool(self._last_scan_nodes)
         self.export_action.setEnabled(self._controls_enabled and has_data)
         self._set_scan_running(self._scan_running)

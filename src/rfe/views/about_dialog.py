@@ -114,7 +114,7 @@ class AboutDialog(QDialog):
 
         self.setLayout(main_layout)
 
-    def showEvent(self, event: QShowEvent) -> None:
+    def showEvent(self, event: QShowEvent) -> None:  # pyright: ignore[reportIncompatibleMethodOverride]
         # Ensure dialog appears on the same screen as parent window and is centered.
         super().showEvent(event)
         parent = self.parent()

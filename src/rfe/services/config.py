@@ -137,7 +137,7 @@ class SettingsStore:
     def load_export_format(self, default: str = "lines") -> str:
         # Fetch the preferred export format, defaulting to default.
         value = self._settings.value(_KEY_EXPORT_FORMAT, type=str)
-        return value or default
+        return value if isinstance(value, str) and value else default
 
     def save_export_format(self, fmt: str) -> None:
         # Persist the preferred export format.

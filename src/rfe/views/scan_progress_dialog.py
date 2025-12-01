@@ -406,7 +406,7 @@ class ScanProgressDialog(QDialog):
         minutes, seconds = divmod(total_seconds, 60)
         return f"{minutes:,}m {seconds:02d}s"
 
-    def resizeEvent(self, event: QResizeEvent) -> None:
+    def resizeEvent(self, event: QResizeEvent) -> None:  # pyright: ignore[reportIncompatibleMethodOverride]
         # Update overlay position and size when dialog is resized
         super().resizeEvent(event)
         if self._processing_overlay.isVisible():
