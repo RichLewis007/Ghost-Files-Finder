@@ -1,78 +1,241 @@
-# Rclone matching rules follow a glob style, not regex.
-# But Regexp syntax can be mixed with glob syntax. (dangerous to do!)
-# see: https://rclone.org/filtering/
-# Note: * matches any sequence of non-separator (/) characters
+# This is a rclone filter file, listing rules which control what files/folders rclone should exclude from transferring, listing, checking, etc.
 #
+# Note: Rclone matching rules follow a glob style, not regex.
+#       But Regexp syntax can be mixed with glob syntax. (dangerous to do!)
+#       see: https://rclone.org/filtering/
+#
+# Note: * matches any sequence of non-separator (/) characters
 # Exclude common unwanted files/folders at any level
 
-# Rclone filter rules (converted from exclude list)
+# Using rclone's --filter-from is more flexible than --exclude or --exclude-from and the same filter file is usable with sync, copy, ls, check, etc.
+
+# dir/** is the standard pattern to exclude the contents of a directory recursively.
+# Patterns ending with / are treated as directory rules and are used to optimize recursion; if they are excludes, rclone will not recurse into those directories. That effectively drops all their children as well.
+
 # Exclude unwanted files and folders
 # Uses - <pattern> rules to exclude unwanted files/folders
 # rclone's first-match logic means earlier excludes win unless a higher-priority include is above them.
-# Ends with + * to include all other files
-# Is ready for use with rclone check or rclone sync like this: --filter-from
+#
+# Important Note: Do NOT put comments on the same line as filter rules! rclone treats these as port of the filter, so the filter will fail.
+#
+# Do NOT need to end a rclone "filter-from" list with "+ *" to include ALL other files. This is default behavior.
+# This list is ready for use with "rclone check" or "rclone sync" like this: "--filter-from [FILTER-NAME]"
 #
 ###############################################################################
 # macOS System Files
 ###############################################################################
 - **/.DS_Store
-- **/._*                    # AppleDouble resource fork files (on non-HFS filesystems)
+# AppleDouble resource fork files (on non-HFS filesystems)
+- **/._*
 - **/.AppleDouble
 - **/.VolumeIcon.icns
-- **/.localized             # Optional: visible folder name localization
-- **/.LSOverride            # Optional: Launch Services overrides
+# Optional: visible folder name localization
+- **/.localized
+# Optional: Launch Services overrides
+- **/.LSOverride
 - **/.com.apple.timemachine.donotpresent
-- **/.TemporaryItems/**     # dir
-- **/.fseventsd/**          # dir
-- **/.Spotlight-V100/**     # dir
-- **/.Trashes/**            # dir
-- **/Backups.backupdb/**    # dir (Time Machine)
-- **/.DocumentRevisions-V100/**  # dir
+- **/.TemporaryItems/**
+- **/.fseventsd/**
+- **/.Spotlight-V100/**
+# Used for MacOS Time Machine
+- **/Backups.backupdb/**
+- **/.DocumentRevisions-V100/**
+- **/.Trash/**
+- **/.Trash-*/**
+- **/.local/share/Trash/**
+- **/.Trashes/**
+# desktop app caches:
+- **/.config/**Cache/**
+
+# Might be too broad:
+# - **/Cache/**
+# - **/Caches/**
+
+# NOT including MacOS Custom folder icon metadata (e.g., "Icon^M")
+# Danger! Do not use this rclone filter file to try to filter out the MacOS Icon? file.
+# It could match actual user folders named Icons, etc.
 
 ###############################################################################
 # Windows System Files
 ###############################################################################
 - **/Desktop.ini
 - **/desktop.ini
-- **/ehthumbs.db            # Windows thumbnail cache (like thumbs.db)
-- **/Thumbs.db              # Windows default (case-insensitive)
-- **/thumbs.db              # for Linux (case-sensitive)
+# Windows thumbnail cache (like thumbs.db)
+- **/ehthumbs.db
+# Windows default (case-insensitive)
+- **/Thumbs.db
+# for Linux (case-sensitive)
+- **/thumbs.db
 - **/.picasa.ini
 
 ###############################################################################
 # Common Temporary, Lock, and Backup Files
 ###############################################################################
-- **/*.tmp                  # Temp files from many editors
-- **/*.bak                  # Backup files (common across IDEs/text editors)
-- **/*.~lock.*#             # LibreOffice/OOo lock files
-- **/~$*                    # MS Office autosave/temp files
-- **/*.part                 # Incomplete download/temp files
-- **/*.crdownload           # Chrome download-in-progress
-- **/*.download             # Generic incomplete download suffix
-- **/*.swp                  # Vim swap files
+# Temp files from many editors
+- **/*.tmp
+# Backup files (common across IDEs/text editors)
+- **/*.bak
+# LibreOffice/OOo lock files
+- **/*.~lock.*#
+# MS Office autosave/temp files. Might want these to recover a file, so keeping.
+## - **/~$*
+# Incomplete download/temp files
+- **/*.part
+# Chrome download-in-progress
+- **/*.crdownload
+# Generic incomplete download suffix
+- **/*.download
+# Vim swap files
+- **/*.swp
 - **/*.swo
 
 ###############################################################################
-# Developer Build and Cache Folders
+# Developer / Tooling Cache & Build Folders
 ###############################################################################
-- **/__pycache__/**         # Python cache folder
-- **/node_modules/**        # dir
-- **/.cocoapods/**          # dir
-- **/.cache/**              # dir
-# might want to keep logs: - **/*.log               # Log files (from builds/tests)
+
+# General cache dirs
+- **/.cache/**
+
+# Python: -----------------------------------------------------
+
+# Python virtual envs and caches
+# .venv / venv / env: recreated with python -m venv or your tool (uv, pipenv, etc).
+- **/.venv/**
+- **/venv/**
+- **/env/**
+- **/.nox/**
+- **/.tox/**
+# Python cache folder
+- **/__pycache__/**
+- **/.mypy_cache/**
+- **/.pytest_cache/**
+- **/.ruff_cache/**
+- **/.hypothesis/**
+- **/.pytype/**
+
+# .coverage and .coverage.* are coverage databases; they can be regenerated.
+- **/.coverage
+- **/.coverage.*
+- **/coverage/**
+
+# possible build/artifacts to exclude if you know you do not care about local rendered docs:
+#- **/htmlcov/**
+#- **/site/**
+
+# JavaScript / Node / Web / front-end caches and build outputs: -----------------------------------------------------
+# .npm, .yarn, bower_components are dependency caches. Usually not worth backing up.
+- **/.npm/**
+- **/.yarn/**
+- **/.yarn/cache/**
+- **/.yarn/unplugged/**
+- **/.yarn/build-state.yml
+- **/.pnp.cjs
+- **/.pnp.loader.mjs
+- **/.turbo/**
+- **/.parcel-cache/**
+# .next, .nuxt, .svelte-kit, .angular, .webpack, .parcel-cache, .turbo, .vercel are all build / framework cache outputs.
+- **/.next/**
+- **/.nuxt/**
+- **/.vercel/**
+- **/.svelte-kit/**
+- **/.angular/**
+- **/.cache-loader/**
+- **/.webpack/**
+- **/bower_components/**
+
+# Java / Kotlin / JVM / general compiled build outputs: -----------------------------------------------------
+- **/out/**
+# /target/ and build/ already listed elsewhere, but leaving here for clarity
+
+# Misc language / tooling caches
+- **/.gradle/**
+- **/.idea_modules/**
+# Some tools have heavy data you might prefer to exclude from “fast” or “critical” backups, but maybe include in full archival backups.
+# Terraform state files (terraform.tfstate) themselves are important, but Terraform’s plugins and cache folder .terraform are regenerateable. So exclude only the dirs, not state files, unless you have a different state backup strategy.
+- **/.terraform/**
+- **/.terraform.d/**
+- **/terraform.tfstate.backup
+
+# iOS / macOS dependency manager (CocoaPods)
+- **/.cocoapods/**
+
+# might want to keep logs:
+# Log files (from builds/tests)
+# - **/*.log
 - **/*.pyo
-- **/dist/**                # Build output
-- **/build/**               # Common C/C++ or Python build folder
-- **/coverage/**            # dir
-- **/*.egg-info/
-# - **/.git/**              # Uncomment if you want to exclude Git metadata
+
+# Build output: -----------------------------------------------------
+# dist is problematic, as there are situations where dist folders are not temp files.
+## - **/dist/**
+
+# Common C/C++ or Python build folder
+- **/build/**
+
+- **/*.egg-info/**
+
+# C / C++ / Rust / Go / general compiled: -----------------------------------------------------
+- **/bin/**
+- **/obj/**
+- **/*.dSYM/**
+- **/CMakeFiles/**
+- **/cmake-build-*/**
+- **/Debug/**
+- **/Release/**
+# .cache is already elsewhere in your file, but worth highlighting
+
+# Rust / Go specific: -----------------------------------------------------
+# (Be careful with target if you have non-Rust usage for that name. Also used for Java/JVM.)
+## - **/target/**
+- **/pkg/**
+
+# Ruby: -----------------------------------------------------
+# Ruby/Bundler cache
+- **/vendor/bundle/**
+- **/.bundle/**
+
+# Project-local temp directories (Ruby and others) -----------------------------------------------------
+- **/tmp/**
+
+# PHP / Composer: -----------------------------------------------------
+# only if you are comfortable re-running composer install
+##- **/vendor/**
+
+# LaTeX: -----------------------------------------------------
+# If you keep LaTeX PDFs but not intermediate files.
+- **/*.aux
+- **/*.toc
+- **/*.out
+- **/*.synctex.gz
+- **/*.bbl
+- **/*.blg
+
+# Large, recreateable tool data, tool caches: -----------------------------------------------------
+
+- **/.docker/**
+- **/node_modules/**
+- **/.pnpm-store/**
+- **/.pnpm/**
+
+# git -----------------------------------------------------
+# Uncomment if you want to exclude Git metadata from transfers.
+## - **/.git/**
 
 ###############################################################################
-# Editor and IDE Configuration Folders
+# Editor and IDE Configuration/Tooling Folders
 ###############################################################################
-# - **/.vscode/**           # Visual Studio Code workspace config, can get BIG
-# - **/.idea/**             # JetBrains IDE config
-# - **/*.sublime-project
-# - **/*.sublime-workspace
+# Visual Studio Code workspace config, can get BIG!
+- **/.vscode/**
+# JetBrains IDE config
+- **/.idea/**
+- **/*.sublime-project
+- **/*.sublime-workspace
+- **/.history/**
+- **/.vscode-test/**
+- **/.vs/**
+- **/.vscode-server/**
+- **/.obsidian/workspace.json
+- **/.obsidian/workspace-*.json
+# only if you can easily re-sync plugins:
+# - **/.obsidian/plugins/**
 
-+ *  # Include everything else
+# All files/folders which did not match an earlier exclude rule are included in rclone sync and check operations.
