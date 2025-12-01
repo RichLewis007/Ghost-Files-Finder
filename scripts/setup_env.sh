@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-
-# Recreate the virtual environment and set up pre-commit hooks
-# (One use case: if you delete the .venv directory, you can run this script to recreate it.)
+# file: setup_env.sh
+# author: Rich Lewis - @RichLewis007
+# description: Recreate the virtual environment and set up pre-commit hooks
+# (One use case: if you delete the .venv directory to save space (as the PySide6 dir is HUGE), you can run this script to recreate it.)
 #
 # What this does:
 # - Removes .venv - Deletes the old virtual environment
