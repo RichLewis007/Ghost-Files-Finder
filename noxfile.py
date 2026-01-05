@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import nox
 
-PYTHON_VERSIONS = ["3.11"]
+PYTHON_VERSIONS = ["3.12"]
 
 
 @nox.session(python=PYTHON_VERSIONS)

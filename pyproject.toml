@@ -4,9 +4,9 @@ version = "1.0.0"
 description = "Desktop app to visualize files matched by rclone filter rules."
 authors = [{ name = "Rich Lewis", email = "rich@example.com" }]
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12.12,<3.13" # because the maximum Python version that supports PySide6 6.7.3 is Python 3.12.x
 dependencies = [
-  "PySide6==6.7.3",
+  "PySide6==6.7.3", # The max version MBP macOS supports
   "send2trash>=1.8",
   "platformdirs>=4.3",
   "rapidfuzz>=3.9",

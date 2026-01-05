@@ -133,8 +133,8 @@ class ScanProgressDialog(QDialog):
 
         rules_line = QHBoxLayout()
         rules_line.setSpacing(6)
-        rules_prefix = QLabel("Rules file:", self)
-        rules_line.addWidget(rules_prefix, 0)
+        self._rules_prefix = QLabel("Rules file:", self)
+        rules_line.addWidget(self._rules_prefix, 0)
         rules_line.addWidget(self._rules_value, 1)
 
         # ------------------------------------------------------------------
@@ -348,14 +348,21 @@ class ScanProgressDialog(QDialog):
     # ------------------------------------------------------------------
     # State helpers
 
-    def prepare_for_scan(self, root_path: Path, filter_path: Path | None) -> None:
+    def prepare_for_scan(
+        self, root_path: Path, filter_path: Path | None, rule_count: int = 0
+    ) -> None:
         # Prime the dialog before a new scan begins.
         self._summary_label.setText("Scanning...")
         self._source_value.setText(str(root_path))
         if filter_path is not None:
             self._rules_value.setText(str(filter_path))
+            if rule_count > 0:
+                self._rules_prefix.setText(f"Rules file ({rule_count} rules):")
+            else:
+                self._rules_prefix.setText("Rules file:")
         else:
             self._rules_value.setText("Not selected")
+            self._rules_prefix.setText("Rules file:")
         self._path_label.setText(self._wrap_path(""))
         self._files_value.setText("0")
         self._folders_value.setText("0")

@@ -20,7 +20,7 @@ from .services import logger as logger_service
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_FILTER_FILE = REPO_ROOT / "tests" / "data" / "rclone-filter-list.txt"
-DEFAULT_ROOT_PATH = Path("/Users/rich/Downloads")
+DEFAULT_ROOT_PATH = Path.home() / "Downloads"
 APP_ICON_PATH = REPO_ROOT / "src" / "rfe" / "resources" / "icons" / "GhostFilesFinder.icns"
 
 # Application version - update in pyproject.toml when changing

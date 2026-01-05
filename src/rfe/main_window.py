@@ -55,7 +55,6 @@ logger = logging.getLogger(__name__)
 
 ICON_ROOT = Path(__file__).resolve().parent / "resources" / "icons" / "feather"
 
-
 # Enable developer shortcuts when true (e.g., auto-preload scan inputs).
 DEBUG_MODE = True
 
@@ -430,7 +429,9 @@ class MainWindow(QMainWindow):
         self._current_match_bytes = 0
 
         progress_dialog = self._show_progress_dialog()
-        progress_dialog.prepare_for_scan(self._root_path, self._filter_file)
+        # Count rules with non-empty patterns (rules actually being applied)
+        valid_rule_count = sum(1 for rule in self.rules_panel.rules if rule.pattern)
+        progress_dialog.prepare_for_scan(self._root_path, self._filter_file, valid_rule_count)
 
         worker = ScanWorker(root_path=self._root_path, rules=self.rules_panel.rules)
         thread = QThread(self)

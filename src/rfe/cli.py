@@ -15,7 +15,7 @@ from .models.rules_model import parse_filter_file
 def build_parser() -> argparse.ArgumentParser:
     # Create and configure the command-line argument parser.
     parser = argparse.ArgumentParser(
-        prog="sei-cli",
+        prog="gff-cli",
         description="Inspect rclone-style filter matches from the command line.",
     )
     parser.add_argument("root", type=Path, help="Root directory to scan.")

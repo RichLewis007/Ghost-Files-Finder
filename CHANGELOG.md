@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed status bar window resizing issue when displaying long file paths during scanning
-  - Implemented text elision in status bar using QFontMetrics to truncate long paths dynamically
+  - Implemented text elision ('to omit something') in status bar using QFontMetrics to truncate long paths dynamically
   - Added path truncation helper to limit path length before display (shows beginning and end with ellipsis)
   - Status bar now properly handles window resize events and re-elides text accordingly
   - Prevents unexpected window expansion when scanning files in deeply nested directories
