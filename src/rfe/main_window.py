@@ -56,7 +56,8 @@ logger = logging.getLogger(__name__)
 ICON_ROOT = Path(__file__).resolve().parent / "resources" / "icons" / "feather"
 
 # Enable developer shortcuts when true (e.g., auto-preload scan inputs).
-DEBUG_MODE = True
+# Set to False for production builds.
+DEBUG_MODE = False
 
 
 def _icon(name: str) -> QIcon:
@@ -361,11 +362,6 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event: QCloseEvent) -> None:
         # Persist state and ensure background work stops before closing.
-        if not (self._root_selected and self._rules_selected):
-            self.status_bar.set_message("Select a source folder and rules file before scanning.")
-            self._set_scan_running(False)
-            return
-
         self._cancel_active_scan(wait=True)
         self._cancel_active_delete(wait=True)
         self._settings_store.save_window_geometry(self.saveGeometry())
@@ -592,6 +588,27 @@ class MainWindow(QMainWindow):
             return
 
         path = Path(filename)
+
+        # Check file size before reading (limit to 10MB to prevent memory issues)
+        MAX_FILTER_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+        try:
+            file_size = path.stat().st_size
+            if file_size > MAX_FILTER_FILE_SIZE:
+                QMessageBox.warning(
+                    self,
+                    "File too large",
+                    f"The selected file is too large ({file_size / (1024 * 1024):.1f} MB).\n"
+                    f"Maximum size is {MAX_FILTER_FILE_SIZE / (1024 * 1024):.0f} MB.",
+                )
+                return
+        except OSError as exc:
+            QMessageBox.warning(
+                self,
+                "Open failed",
+                f"Unable to access the selected file:\n{exc}",
+            )
+            return
+
         try:
             text = path.read_text(encoding="utf-8")
         except UnicodeDecodeError:

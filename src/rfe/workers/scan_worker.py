@@ -18,6 +18,9 @@ from rfe.models.fs_model import NodeType, PathNode
 from rfe.models.match_engine import MatchEngine, MatchResult
 from rfe.models.rules_model import Rule
 
+# Progress update interval: emit progress signal every N items scanned
+PROGRESS_EMIT_INTERVAL = 200
+
 
 @dataclass(slots=True)
 class ScanStats:
@@ -119,8 +122,6 @@ class ScanWorker(QObject):
             type="dir",
         )
 
-        emit_interval = 200
-
         for dirpath, dirnames, filenames in os.walk(root):
             if self._cancel_requested:
                 return None
@@ -155,7 +156,7 @@ class ScanWorker(QObject):
                     stats.folders += 1
 
                 stats.scanned += 1
-                if stats.scanned % emit_interval == 0 or stats.scanned == 1:
+                if stats.scanned % PROGRESS_EMIT_INTERVAL == 0 or stats.scanned == 1:
                     elapsed = monotonic() - stats.start_time
                     self.progress.emit(
                         stats.files,

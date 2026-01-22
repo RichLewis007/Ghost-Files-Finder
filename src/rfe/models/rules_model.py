@@ -33,7 +33,12 @@ def parse_filter_file(path: Path) -> list[Rule]:
     pending_label: str | None = None
     pending_color: str | None = None
 
-    for lineno, raw_line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+    try:
+        content = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        raise ValueError(f"Failed to read filter file {path}: {exc}") from exc
+
+    for lineno, raw_line in enumerate(content.splitlines(), start=1):
         line = raw_line.strip()
         if not line:
             pending_label = None

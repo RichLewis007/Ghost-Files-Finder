@@ -22,6 +22,14 @@ from .rules_model import Rule
 
 logger = logging.getLogger(__name__)
 
+# Chunk sizes for processing nodes to keep UI responsive
+NODE_CHUNK_SIZE = 50  # Process N nodes at a time before processing events
+LARGE_CHILD_CHUNK_SIZE = 25  # Chunk size for nodes with >500 children
+MEDIUM_CHILD_CHUNK_SIZE = 50  # Chunk size for nodes with >200 children
+STANDARD_CHILD_CHUNK_SIZE = 200  # Standard chunk size for smaller lists
+LARGE_CHILD_THRESHOLD = 500  # Threshold for "large" child count
+MEDIUM_CHILD_THRESHOLD = 200  # Threshold for "medium" child count
+
 NodeType = Literal["file", "dir"]
 
 
@@ -74,7 +82,6 @@ class PathTreeModel(QStandardItemModel):
         logger.info("Loading %d nodes into tree model", total_nodes)
 
         # Process in chunks to keep UI responsive
-        chunk_size = 50  # Process 50 nodes at a time (reduced for better responsiveness)
         processed = 0
         total_children_processed = 0
 
@@ -86,7 +93,7 @@ class PathTreeModel(QStandardItemModel):
             processed += 1
 
             # Periodically process events to keep UI responsive
-            if processed % chunk_size == 0:
+            if processed % NODE_CHUNK_SIZE == 0:
                 QApplication.processEvents()
                 logger.debug(
                     "Processed %d/%d top-level nodes, %d total items",
@@ -130,17 +137,25 @@ class PathTreeModel(QStandardItemModel):
         child_count = len(node.children)
         if child_count > 0:
             # Log if a node has many children (potential performance issue)
-            if child_count > 500:
+            if child_count > LARGE_CHILD_THRESHOLD:
                 logger.debug(
                     "Node %s has %d children - processing in chunks", display_name, child_count
                 )
 
             # Process children in chunks to keep UI responsive
             # Use smaller chunks for better responsiveness with large lists
-            chunk_size = 25 if child_count > 500 else (50 if child_count > 200 else 200)
+            chunk_size = (
+                LARGE_CHILD_CHUNK_SIZE
+                if child_count > LARGE_CHILD_THRESHOLD
+                else (
+                    MEDIUM_CHILD_CHUNK_SIZE
+                    if child_count > MEDIUM_CHILD_THRESHOLD
+                    else STANDARD_CHILD_CHUNK_SIZE
+                )
+            )
             for i, child in enumerate(node.children):
                 # Log if this child itself has many children (nested large structure)
-                if len(child.children) > 500:
+                if len(child.children) > LARGE_CHILD_THRESHOLD:
                     logger.debug(
                         "  Child %d/%d (%s) has %d children - will process incrementally",
                         i + 1,
@@ -156,7 +171,7 @@ class PathTreeModel(QStandardItemModel):
 
                 # Process events more frequently for large child lists
                 # This is critical to prevent UI freezing with deeply nested structures
-                if child_count > 500:
+                if child_count > LARGE_CHILD_THRESHOLD:
                     # Process events every chunk_size children
                     if i > 0 and i % chunk_size == 0:
                         QApplication.processEvents()
@@ -164,12 +179,12 @@ class PathTreeModel(QStandardItemModel):
                             "  Processed %d/%d children of %s", i, child_count, display_name
                         )
                     # Also process events after each child that has many children itself
-                    elif len(child.children) > 200:
+                    elif len(child.children) > MEDIUM_CHILD_THRESHOLD:
                         QApplication.processEvents()
-                elif child_count > 200:
-                    if i > 0 and i % 50 == 0:
+                elif child_count > MEDIUM_CHILD_THRESHOLD:
+                    if i > 0 and i % MEDIUM_CHILD_CHUNK_SIZE == 0:
                         QApplication.processEvents()
-                elif i > 0 and i % 200 == 0:
+                elif i > 0 and i % STANDARD_CHILD_CHUNK_SIZE == 0:
                     # Process events for smaller lists too, but less frequently
                     QApplication.processEvents()
 
