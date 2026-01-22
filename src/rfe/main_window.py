@@ -8,6 +8,7 @@ from __future__ import annotations
 import csv
 import json
 import logging
+import os
 import re
 import sys
 from collections.abc import Callable, Iterable
@@ -56,8 +57,9 @@ logger = logging.getLogger(__name__)
 ICON_ROOT = Path(__file__).resolve().parent / "resources" / "icons" / "feather"
 
 # Enable developer shortcuts when true (e.g., auto-preload scan inputs).
-# Set to False for production builds.
-DEBUG_MODE = False
+# Can be configured via GFF_DEBUG_MODE environment variable (set to "1" or "true" to enable).
+# Defaults to False for production builds.
+DEBUG_MODE = os.getenv("GFF_DEBUG_MODE", "").lower() in ("1", "true", "yes", "on")
 
 
 def _icon(name: str) -> QIcon:
